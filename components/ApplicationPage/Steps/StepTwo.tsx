@@ -40,7 +40,7 @@ export default function StepTwo({ nextStep, prevStep, updateFormData }: Props) {
           </label>
           <input
             type="text"
-            placeholder="+254 700 000 000"
+            placeholder="0700 000 000"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"

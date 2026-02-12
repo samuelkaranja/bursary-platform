@@ -5,6 +5,8 @@ import Stepper from "@/components/ApplicationPage/Stepper";
 import StepOne from "@/components/ApplicationPage/Steps/StepOne";
 import StepThree from "@/components/ApplicationPage/Steps/StepThree";
 import StepTwo from "@/components/ApplicationPage/Steps/StepTwo";
+import StepFour from "@/components/ApplicationPage/Steps/StepFour";
+import StepFive from "@/components/ApplicationPage/Steps/StepFive";
 
 export default function ApplicationPage() {
   const [step, setStep] = useState(1);
@@ -45,6 +47,24 @@ export default function ApplicationPage() {
               nextStep={nextStep}
               prevStep={prevStep}
               updateFormData={updateFormData}
+            />
+          )}
+          {step === 4 && (
+            <StepFour
+              nextStep={nextStep}
+              prevStep={prevStep}
+              updateFormData={updateFormData}
+            />
+          )}
+
+          {step === 5 && (
+            <StepFive
+              prevStep={prevStep}
+              formData={formData}
+              onSubmit={() => {
+                console.log("SUBMIT DATA:", formData);
+                // call API here
+              }}
             />
           )}
         </div>
