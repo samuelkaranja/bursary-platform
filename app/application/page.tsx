@@ -47,6 +47,7 @@ export default function ApplicationPage() {
               nextStep={nextStep}
               prevStep={prevStep}
               updateFormData={updateFormData}
+              educationLevel={formData.educationLevel}
             />
           )}
           {step === 4 && (
