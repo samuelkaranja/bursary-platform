@@ -84,7 +84,7 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
             value={form.fullName}
             onChange={handleChange}
             placeholder="Enter your full name"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
 
@@ -98,7 +98,7 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
             value={form.schoolName}
             onChange={handleChange}
             placeholder="Enter your school name"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
 
@@ -112,7 +112,7 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
             value={form.admissionNumber}
             onChange={handleChange}
             placeholder="Enter admission number"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
 
@@ -125,7 +125,7 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
             name="classForm"
             value={form.classForm}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           >
             <option value="">Select Class/Form</option>
             <option>Form 1</option>

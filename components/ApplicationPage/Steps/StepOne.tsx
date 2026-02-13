@@ -83,7 +83,7 @@ export default function StepOne({ nextStep, prevStep }: Props) {
             placeholder="0700 000 000"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200  px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
           <p className="text-sm text-gray-500 mt-2">
             This will be your username
@@ -100,7 +100,7 @@ export default function StepOne({ nextStep, prevStep }: Props) {
             placeholder="Enter password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
 
@@ -114,7 +114,7 @@ export default function StepOne({ nextStep, prevStep }: Props) {
             placeholder="Re-enter password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
       </div>

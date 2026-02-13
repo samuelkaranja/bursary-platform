@@ -106,7 +106,7 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             value={form.parentName}
             onChange={handleChange}
             placeholder="Enter parent/guardian full name"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
 
@@ -120,7 +120,7 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             value={form.parentId}
             onChange={handleChange}
             placeholder="Enter ID number"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
 
@@ -134,7 +134,7 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             value={form.parentPhone}
             onChange={handleChange}
             placeholder="0700 000 000"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
 
@@ -148,7 +148,7 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             value={form.yearOfBirth}
             onChange={handleChange}
             placeholder="YYYY"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
 
@@ -161,7 +161,7 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             name="relationship"
             value={form.relationship}
             onChange={handleChange}
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           >
             <option value="">Select relationship</option>
             <option value="father">Father</option>
@@ -192,7 +192,11 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             />
             {frontPreview && (
               <p className="mt-2 text-blue-700 text-sm underline">
-                <a href={frontPreview} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={frontPreview}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   View Front ID
                 </a>
               </p>

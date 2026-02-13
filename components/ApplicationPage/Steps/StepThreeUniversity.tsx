@@ -80,7 +80,7 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
             value={form.fullName}
             onChange={handleChange}
             placeholder="Enter your full name"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
 
@@ -93,7 +93,7 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
             value={form.institution}
             onChange={handleChange}
             placeholder="Enter your institution name"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
 
@@ -106,7 +106,7 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
             value={form.nationalId}
             onChange={handleChange}
             placeholder="Enter your ID number"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
 
@@ -119,7 +119,7 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
             value={form.registrationNumber}
             onChange={handleChange}
             placeholder="Enter registration number"
-            className="w-full rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
         </div>
 
