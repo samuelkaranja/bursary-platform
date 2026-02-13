@@ -1,19 +1,23 @@
 "use client";
 
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
 import StepThreeSecondary from "./StepThreeSecondary";
 import StepThreeUniversity from "./StepThreeUniversity";
 
 interface Props {
   nextStep: () => void;
   prevStep: () => void;
-  updateFormData: (data: any) => void;
-  educationLevel: string;
 }
 
-export default function StepThree(props: Props) {
-  if (props.educationLevel === "secondary") {
-    return <StepThreeSecondary {...props} />;
+export default function StepThree({ nextStep, prevStep }: Props) {
+  const educationLevel = useSelector(
+    (state: RootState) => state.application.educationLevel,
+  );
+
+  if (educationLevel === "secondary") {
+    return <StepThreeSecondary nextStep={nextStep} prevStep={prevStep} />;
   }
 
-  return <StepThreeUniversity {...props} />;
+  return <StepThreeUniversity nextStep={nextStep} prevStep={prevStep} />;
 }

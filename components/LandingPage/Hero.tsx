@@ -51,7 +51,7 @@ export default function Hero() {
           </div>
 
           <div className="absolute bottom-4 bg-white text-blue-900 text-xs px-4 py-2 rounded-full shadow-md">
-            Hon. Member of Parliament
+            Hon. Member of Parliament - Chege Njuguna
           </div>
         </div>
       </div>

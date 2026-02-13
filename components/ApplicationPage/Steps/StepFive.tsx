@@ -1,19 +1,36 @@
 "use client";
 
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "@/redux/store";
+import { submitApplication } from "@/redux/features/applicationSlice";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 
 interface Props {
   prevStep: () => void;
-  formData: any;
-  onSubmit: () => void;
 }
 
-export default function StepFive({ prevStep, formData, onSubmit }: Props) {
+export default function StepFive({ prevStep }: Props) {
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+
   const [agree, setAgree] = useState(false);
+  const application = useSelector((state: RootState) => state.application);
+
+  const handleSubmit = async () => {
+    const result = await dispatch(submitApplication());
+
+    if (submitApplication.fulfilled.match(result)) {
+      toast.success("Application submitted successfully!");
+      router.push("/success");
+    } else {
+      toast.error("Submission failed. Please try again.");
+    }
+  };
 
   return (
     <div>
-      {/* Title */}
       <h2 className="text-xl font-semibold text-gray-900">
         Review Your Application
       </h2>
@@ -21,33 +38,31 @@ export default function StepFive({ prevStep, formData, onSubmit }: Props) {
         Please review all information before submitting
       </p>
 
-      {/* Review Sections */}
       <div className="space-y-6 text-sm">
         <div>
           <h3 className="font-semibold text-blue-900">Account Information</h3>
-          <p>Phone: {formData.phone}</p>
+          <p>Phone: {application.phone || "-"}</p>
         </div>
 
         <div>
           <h3 className="font-semibold text-blue-900">Student Details</h3>
-          <p>Full Name: {formData.fullName}</p>
-          <p>Institution: {formData.institution}</p>
-          <p>ID Number: {formData.nationalId}</p>
-          <p>Registration Number: {formData.registrationNumber}</p>
+          <p>Full Name: {application.fullName || "-"}</p>
+          <p>Institution: {application.institution || "-"}</p>
+          <p>ID Number: {application.nationalId || "-"}</p>
+          <p>Registration Number: {application.registrationNumber || "-"}</p>
         </div>
 
         <div>
           <h3 className="font-semibold text-blue-900">
             Parent/Guardian Details
           </h3>
-          <p>Name: {formData.parentName}</p>
-          <p>ID Number: {formData.parentId}</p>
-          <p>Phone: {formData.parentPhone}</p>
-          <p>Relationship: {formData.relationship}</p>
+          <p>Name: {application.parentName || "-"}</p>
+          <p>ID Number: {application.parentId || "-"}</p>
+          <p>Phone: {application.parentPhone || "-"}</p>
+          <p>Relationship: {application.relationship || "-"}</p>
         </div>
       </div>
 
-      {/* Declaration */}
       <div className="bg-gray-100 rounded-xl p-4 mt-8 flex gap-3">
         <input
           type="checkbox"
@@ -62,7 +77,6 @@ export default function StepFive({ prevStep, formData, onSubmit }: Props) {
         </p>
       </div>
 
-      {/* Buttons */}
       <div className="flex justify-between items-center mt-10">
         <button
           onClick={prevStep}
@@ -73,13 +87,9 @@ export default function StepFive({ prevStep, formData, onSubmit }: Props) {
 
         <button
           disabled={!agree}
-          onClick={onSubmit}
+          onClick={handleSubmit}
           className={`px-6 py-2 rounded-lg text-white transition
-          ${
-            agree
-              ? "bg-blue-900 hover:bg-blue-800"
-              : "bg-gray-300 cursor-not-allowed"
-          }`}
+          ${agree ? "bg-blue-900 hover:bg-blue-800" : "bg-gray-300 cursor-not-allowed"}`}
         >
           Submit Application ✓
         </button>
