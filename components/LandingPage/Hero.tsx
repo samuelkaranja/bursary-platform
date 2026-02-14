@@ -12,8 +12,7 @@ export default function Hero() {
           </span>
 
           <h1 className="mt-6 text-4xl md:text-5xl font-bold leading-tight">
-            Constituency Bursary <br />
-            Program 2026
+            Kandara Constituency Bursary Program 2026
           </h1>
 
           <p className="mt-6 text-blue-100 max-w-xl text-sm md:text-base">
@@ -51,7 +50,7 @@ export default function Hero() {
           </div>
 
           <div className="absolute bottom-4 bg-white text-blue-900 text-xs px-4 py-2 rounded-full shadow-md">
-            Hon. Member of Parliament - Chege Njuguna
+            Hon. Member of Parliament Kandara Constituency - Chege Njuguna
           </div>
         </div>
       </div>
