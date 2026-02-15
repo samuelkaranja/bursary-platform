@@ -13,7 +13,13 @@ interface Props {
 
 export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading } = useSelector((state: RootState) => state.application);
+  const {
+    loading,
+    fullName,
+    institution: schoolNameFromRedux,
+    registrationNumber: admissionNumberFromRedux,
+    nationalId: classFormFromRedux, // Using nationalId field in Redux for classForm
+  } = useSelector((state: RootState) => state.application);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -24,6 +30,22 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
   });
 
   const [previewURL, setPreviewURL] = useState<string | null>(null);
+
+  // Prefill from Redux state
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      fullName: fullName || "",
+      schoolName: schoolNameFromRedux || "",
+      admissionNumber: admissionNumberFromRedux || "",
+      classForm: classFormFromRedux || "",
+    }));
+  }, [
+    fullName,
+    schoolNameFromRedux,
+    admissionNumberFromRedux,
+    classFormFromRedux,
+  ]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -59,7 +81,6 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
     }
   };
 
-  // Cleanup object URL
   useEffect(() => {
     return () => {
       previewURL && URL.revokeObjectURL(previewURL);
@@ -139,7 +160,6 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
           <label className="block text-sm font-medium text-gray-700 mb-3">
             Birth Certificate
           </label>
-
           <label className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition relative">
             {!form.birthCertificate ? (
               <span className="text-gray-500 text-sm text-center">

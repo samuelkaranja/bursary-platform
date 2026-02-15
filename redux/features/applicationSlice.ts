@@ -20,6 +20,7 @@ interface ApplicationState {
   institution: string | null;
   nationalId: string | null;
   registrationNumber: string | null;
+  studentClassForm: string | null; // NEW FIELD
 
   parentName: string | null;
   parentId: string | null;
@@ -43,6 +44,7 @@ const initialState: ApplicationState = {
   institution: null,
   nationalId: null,
   registrationNumber: null,
+  studentClassForm: null, // NEW FIELD
 
   parentName: null,
   parentId: null,
@@ -89,7 +91,7 @@ export const submitStudentDetails = createAsyncThunk(
       accessToken!,
     );
 
-    return data; // Expect backend returns fields like fullName, phone, etc.
+    return data;
   },
 );
 
@@ -109,7 +111,7 @@ export const submitGuardianDetails = createAsyncThunk(
       accessToken!,
     );
 
-    return data; // Expect backend returns fields like parentName, parentPhone, etc.
+    return data;
   },
 );
 
@@ -167,11 +169,13 @@ const applicationSlice = createSlice({
       state.institution = null;
       state.nationalId = null;
       state.registrationNumber = null;
+      state.studentClassForm = null;
 
       state.parentName = null;
       state.parentId = null;
       state.parentPhone = null;
       state.relationship = null;
+      state.guardianPhoto = null;
     },
   },
   extraReducers: (builder) => {
@@ -205,6 +209,8 @@ const applicationSlice = createSlice({
         state.registrationNumber =
           action.payload.student_registration_number ||
           state.registrationNumber;
+        state.studentClassForm =
+          action.payload.student_class_form || state.studentClassForm; // ✅ NEW
       })
       .addCase(submitStudentDetails.rejected, (state) => {
         state.loading = false;
@@ -263,6 +269,7 @@ const applicationSlice = createSlice({
         state.institution = application.institution_name;
         state.registrationNumber = application.student_registration_number;
         state.nationalId = application.student_id_number;
+        state.studentClassForm = application.student_class_form; // ✅ NEW
 
         state.parentName = application.guardian_full_name;
         state.parentId = application.guardian_id_number;

@@ -13,9 +13,14 @@ interface Props {
 
 export default function StepFour({ nextStep, prevStep }: Props) {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading, guardianPhoto } = useSelector(
-    (state: RootState) => state.application,
-  );
+  const {
+    loading,
+    parentName,
+    parentId,
+    parentPhone,
+    relationship,
+    guardianPhoto: reduxGuardianPhoto,
+  } = useSelector((state: RootState) => state.application);
 
   const [form, setForm] = useState({
     parentName: "",
@@ -33,12 +38,21 @@ export default function StepFour({ nextStep, prevStep }: Props) {
   const [backPreview, setBackPreview] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
-  // Populate previews from Redux if available (e.g., after fetch)
+  // 🔥 Hydrate form fields from Redux when going back
   useEffect(() => {
-    if (guardianPhoto) {
-      setPhotoPreview(guardianPhoto);
+    setForm((prev) => ({
+      ...prev,
+      parentName: parentName || "",
+      parentId: parentId || "",
+      parentPhone: parentPhone || "",
+      relationship: relationship || "",
+    }));
+
+    // Hydrate guardian photo preview from Redux if available
+    if (reduxGuardianPhoto) {
+      setPhotoPreview(reduxGuardianPhoto);
     }
-  }, [guardianPhoto]);
+  }, [parentName, parentId, parentPhone, relationship, reduxGuardianPhoto]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -95,7 +109,7 @@ export default function StepFour({ nextStep, prevStep }: Props) {
       // Update preview to actual URL returned by backend
       const uploadedPhotoUrl = result.payload.guardian_photo;
       if (uploadedPhotoUrl) {
-        setPhotoPreview(uploadedPhotoUrl); // this will now persist even on refresh
+        setPhotoPreview(uploadedPhotoUrl); // persists even on refresh
       }
 
       nextStep();

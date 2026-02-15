@@ -13,7 +13,8 @@ interface Props {
 
 export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading } = useSelector((state: RootState) => state.application);
+  const { loading, fullName, institution, nationalId, registrationNumber } =
+    useSelector((state: RootState) => state.application);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -24,6 +25,17 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
   });
 
   const [previewURL, setPreviewURL] = useState<string | null>(null);
+
+  // Prefill from Redux state
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      fullName: fullName || "",
+      institution: institution || "",
+      nationalId: nationalId || "",
+      registrationNumber: registrationNumber || "",
+    }));
+  }, [fullName, institution, nationalId, registrationNumber]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -57,9 +69,7 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
 
   useEffect(() => {
     return () => {
-      if (previewURL) {
-        URL.revokeObjectURL(previewURL);
-      }
+      previewURL && URL.revokeObjectURL(previewURL);
     };
   }, [previewURL]);
 
