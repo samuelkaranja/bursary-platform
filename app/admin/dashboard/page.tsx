@@ -1,12 +1,10 @@
 import React from "react";
-//import { AdminShell } from "@/components/admin/AdminShell";
-//import { StatCard } from "@/components/admin/StatCard";
-// import { StatusPie } from "@/components/admin/charts/StatusPie";
-// import { EducationBar } from "@/components/admin/charts/EducationBar";
-// import { TopSchoolsBar } from "@/components/admin/charts/TopSchoolsBar";
 import { AdminShell } from "@/components/adminPage/AdminShell";
 import { StatCard } from "@/components/adminPage/StatCard";
 import { Users, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { StatusPie } from "@/components/adminPage/charts/StatusPie";
+import { EducationBar } from "@/components/adminPage/charts/EducationBar";
+import { TopSchoolsBar } from "@/components/adminPage/charts/TopSchoolsBar";
 
 export default function DashboardPage() {
   // Replace with API data
@@ -41,24 +39,24 @@ export default function DashboardPage() {
     },
   ];
 
-  //   const statusPie = [
-  //     { name: "Pending", value: 8, color: "#F59E0B" },
-  //     { name: "Approved", value: 3, color: "#10B981" },
-  //     { name: "Rejected", value: 1, color: "#EF4444" },
-  //   ];
+  const statusPie = [
+    { name: "Pending", value: 8, color: "#F59E0B" },
+    { name: "Approved", value: 3, color: "#10B981" },
+    { name: "Rejected", value: 1, color: "#EF4444" },
+  ];
 
-  //   const educationBars = [
-  //     { level: "Secondary", applications: 8 },
-  //     { level: "University", applications: 4 },
-  //   ];
+  const educationBars = [
+    { level: "Secondary", applications: 8 },
+    { level: "University", applications: 4 },
+  ];
 
-  //   const topSchools = [
-  //     { school: "Nairobi Technical", applications: 2 },
-  //     { school: "Kiranga High", applications: 2 },
-  //     { school: "Starehe Girls Centre", applications: 2 },
-  //     { school: "University of Nairobi", applications: 1 },
-  //     { school: "Alliance Girls High School", applications: 1 },
-  //   ];
+  const topSchools = [
+    { school: "Nairobi Technical", applications: 2 },
+    { school: "Kiranga High", applications: 2 },
+    { school: "Starehe Girls Centre", applications: 2 },
+    { school: "University of Nairobi", applications: 1 },
+    { school: "Alliance Girls High School", applications: 1 },
+  ];
 
   return (
     <AdminShell
@@ -78,7 +76,7 @@ export default function DashboardPage() {
         ))}
       </section>
 
-      {/* <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <section className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="mb-4">
             <div className="text-sm font-semibold text-slate-800">
@@ -112,7 +110,7 @@ export default function DashboardPage() {
           <div className="text-xs text-slate-500">Applications by school</div>
         </div>
         <TopSchoolsBar data={topSchools} />
-      </section> */}
+      </section>
     </AdminShell>
   );
 }

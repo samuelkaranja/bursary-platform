@@ -1,6 +1,47 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
+import { AppDispatch, RootState } from "@/redux/store";
+import { loginUser } from "@/redux/features/authSlice";
+import { fetchMyApplication } from "@/redux/features/applicationSlice";
+import toast from "react-hot-toast";
 
 export default function TrackApplicationLoginPage() {
+  const dispatch = useDispatch<AppDispatch>();
+  const router = useRouter();
+
+  const { loading } = useSelector((state: RootState) => state.auth);
+
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!phone || !password) {
+      toast.error("Please enter phone and password");
+      return;
+    }
+
+    try {
+      // 1️⃣ Login
+      await dispatch(loginUser({ phone, password })).unwrap();
+
+      // 2️⃣ Fetch application data
+      await dispatch(fetchMyApplication()).unwrap();
+
+      toast.success("Login successful");
+
+      // 3️⃣ Redirect
+      router.push("/status"); // change if your route is different
+    } catch (error: any) {
+      toast.error(error || "Login failed");
+    }
+  };
+
   return (
     <main className="min-h-screen bg-white px-4 py-15">
       <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
@@ -19,7 +60,7 @@ export default function TrackApplicationLoginPage() {
             Enter your credentials to access your application
           </p>
 
-          <form className="mt-6 space-y-4">
+          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
             {/* Phone */}
             <div>
               <label
@@ -36,6 +77,8 @@ export default function TrackApplicationLoginPage() {
                   name="phone"
                   type="tel"
                   placeholder="0712345678"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
                   className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
                   autoComplete="tel"
                 />
@@ -58,6 +101,8 @@ export default function TrackApplicationLoginPage() {
                   name="password"
                   type="password"
                   placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
                   autoComplete="current-password"
                 />
@@ -67,9 +112,10 @@ export default function TrackApplicationLoginPage() {
             {/* Button */}
             <button
               type="submit"
-              className="mt-2 w-full rounded-xl bg-[#1f3a8a] py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 active:opacity-90"
+              disabled={loading}
+              className="mt-2 w-full rounded-xl bg-[#1f3a8a] py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-95 active:opacity-90 disabled:opacity-60"
             >
-              Login
+              {loading ? "Logging in..." : "Login"}
             </button>
 
             {/* Back */}
@@ -89,7 +135,7 @@ export default function TrackApplicationLoginPage() {
   );
 }
 
-/** Simple inline icons (no extra deps) */
+/** Icons unchanged */
 function PhoneIcon() {
   return (
     <svg

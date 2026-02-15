@@ -46,6 +46,25 @@ export const registerUser = createAsyncThunk(
   },
 );
 
+export const loginUser = createAsyncThunk(
+  "auth/login",
+  async (
+    { phone, password }: { phone: string; password: string },
+    { rejectWithValue },
+  ) => {
+    try {
+      const data = await apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ phone, password }),
+      });
+
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
 const authSlice = createSlice({
   name: "auth",
   initialState,
@@ -68,6 +87,20 @@ const authSlice = createSlice({
         localStorage.setItem("token", action.payload.access_token);
       })
       .addCase(registerUser.rejected, (state) => {
+        state.loading = false;
+      })
+
+      .addCase(loginUser.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(loginUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.accessToken = action.payload.access_token;
+        state.isAuthenticated = true;
+
+        localStorage.setItem("token", action.payload.access_token);
+      })
+      .addCase(loginUser.rejected, (state) => {
         state.loading = false;
       });
   },
