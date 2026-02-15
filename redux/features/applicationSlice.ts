@@ -11,20 +11,21 @@ interface ApplicationState {
   status: string | null;
   trackingNumber: string | null;
   timeline: any[];
+  documents: any[];
   loading: boolean;
+  error: string | null;
 
-  // Student Details
   phone: string | null;
   fullName: string | null;
   institution: string | null;
   nationalId: string | null;
   registrationNumber: string | null;
 
-  // Guardian Details
   parentName: string | null;
   parentId: string | null;
   parentPhone: string | null;
   relationship: string | null;
+  guardianPhoto: string | null;
 }
 
 const initialState: ApplicationState = {
@@ -33,6 +34,8 @@ const initialState: ApplicationState = {
   status: null,
   trackingNumber: null,
   timeline: [],
+  documents: [],
+  error: null,
   loading: false,
 
   phone: null,
@@ -45,6 +48,7 @@ const initialState: ApplicationState = {
   parentId: null,
   parentPhone: null,
   relationship: null,
+  guardianPhoto: null,
 };
 
 // -------------------
@@ -130,6 +134,21 @@ export const submitApplication = createAsyncThunk(
   },
 );
 
+export const fetchMyApplication = createAsyncThunk(
+  "application/fetchMyApplication",
+  async (_, { getState, rejectWithValue }) => {
+    const state = getState() as RootState;
+    const token = state.auth.accessToken;
+
+    try {
+      const data = await apiFetch("/applications/me", {}, token!);
+      return data;
+    } catch (error: any) {
+      return rejectWithValue(error.message);
+    }
+  },
+);
+
 // -------------------
 // Slice
 // -------------------
@@ -157,30 +176,105 @@ const applicationSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // CREATE DRAFT
+      .addCase(createDraft.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(createDraft.fulfilled, (state, action) => {
+        state.loading = false;
         state.applicationId = action.payload.id;
         state.educationLevel = action.payload.education_level;
         state.status = action.payload.status;
       })
+      .addCase(createDraft.rejected, (state) => {
+        state.loading = false;
+      })
+
+      // STUDENT DETAILS
+      .addCase(submitStudentDetails.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(submitStudentDetails.fulfilled, (state, action) => {
-        // Update student fields in Redux
+        state.loading = false;
+
         state.phone = action.payload.phone || state.phone;
-        state.fullName = action.payload.fullName || state.fullName;
-        state.institution = action.payload.institution || state.institution;
-        state.nationalId = action.payload.nationalId || state.nationalId;
+        state.fullName = action.payload.student_full_name || state.fullName;
+        state.institution =
+          action.payload.institution_name || state.institution;
+        state.nationalId = action.payload.student_id_number || state.nationalId;
         state.registrationNumber =
-          action.payload.registrationNumber || state.registrationNumber;
+          action.payload.student_registration_number ||
+          state.registrationNumber;
+      })
+      .addCase(submitStudentDetails.rejected, (state) => {
+        state.loading = false;
+      })
+
+      // GUARDIAN DETAILS
+      .addCase(submitGuardianDetails.pending, (state) => {
+        state.loading = true;
       })
       .addCase(submitGuardianDetails.fulfilled, (state, action) => {
-        // Update guardian fields in Redux
-        state.parentName = action.payload.parentName || state.parentName;
-        state.parentId = action.payload.parentId || state.parentId;
-        state.parentPhone = action.payload.parentPhone || state.parentPhone;
-        state.relationship = action.payload.relationship || state.relationship;
+        state.loading = false;
+
+        state.parentName =
+          action.payload.guardian_full_name || state.parentName;
+        state.parentId = action.payload.guardian_id_number || state.parentId;
+        state.parentPhone = action.payload.guardian_phone || state.parentPhone;
+        state.relationship =
+          action.payload.guardian_relationship || state.relationship;
+        state.guardianPhoto =
+          action.payload.guardian_photo || state.guardianPhoto;
+      })
+      .addCase(submitGuardianDetails.rejected, (state) => {
+        state.loading = false;
+      })
+
+      // SUBMIT APPLICATION
+      .addCase(submitApplication.pending, (state) => {
+        state.loading = true;
       })
       .addCase(submitApplication.fulfilled, (state, action) => {
+        state.loading = false;
         state.trackingNumber = action.payload.tracking_number;
         state.status = "submitted";
+      })
+      .addCase(submitApplication.rejected, (state) => {
+        state.loading = false;
+      })
+
+      // FETCHING APPLICATION DETAILS
+      .addCase(fetchMyApplication.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMyApplication.fulfilled, (state, action) => {
+        state.loading = false;
+
+        const { application, timeline, documents } = action.payload;
+
+        state.applicationId = application.id;
+        state.educationLevel = application.education_level;
+        state.status = application.status;
+        state.trackingNumber = application.tracking_number;
+
+        state.phone = application.phone;
+        state.fullName = application.student_full_name;
+        state.institution = application.institution_name;
+        state.registrationNumber = application.student_registration_number;
+        state.nationalId = application.student_id_number;
+
+        state.parentName = application.guardian_full_name;
+        state.parentId = application.guardian_id_number;
+        state.parentPhone = application.guardian_phone;
+        state.relationship = application.guardian_relationship;
+
+        state.timeline = timeline;
+        state.documents = documents;
+      })
+      .addCase(fetchMyApplication.rejected, (state, action: any) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

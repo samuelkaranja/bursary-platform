@@ -13,7 +13,9 @@ interface Props {
 
 export default function StepFour({ nextStep, prevStep }: Props) {
   const dispatch = useDispatch<AppDispatch>();
-  const { loading } = useSelector((state: RootState) => state.application);
+  const { loading, guardianPhoto } = useSelector(
+    (state: RootState) => state.application,
+  );
 
   const [form, setForm] = useState({
     parentName: "",
@@ -23,10 +25,20 @@ export default function StepFour({ nextStep, prevStep }: Props) {
     relationship: "",
     idFront: null as File | null,
     idBack: null as File | null,
+    guardianPhoto: null as File | null,
   });
 
+  // Previews for local files
   const [frontPreview, setFrontPreview] = useState<string | null>(null);
   const [backPreview, setBackPreview] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  // Populate previews from Redux if available (e.g., after fetch)
+  useEffect(() => {
+    if (guardianPhoto) {
+      setPhotoPreview(guardianPhoto);
+    }
+  }, [guardianPhoto]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
@@ -39,10 +51,26 @@ export default function StepFour({ nextStep, prevStep }: Props) {
     field: "idFront" | "idBack",
   ) => {
     if (e.target.files?.[0]) {
-      setForm({ ...form, [field]: e.target.files[0] });
+      const file = e.target.files[0];
+      setForm({ ...form, [field]: file });
+
+      const objectUrl = URL.createObjectURL(file);
       field === "idFront"
-        ? setFrontPreview(URL.createObjectURL(e.target.files[0]))
-        : setBackPreview(URL.createObjectURL(e.target.files[0]));
+        ? setFrontPreview(objectUrl)
+        : setBackPreview(objectUrl);
+    }
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      const file = e.target.files[0];
+      setForm({ ...form, guardianPhoto: file });
+
+      // Revoke previous preview if exists
+      photoPreview && URL.revokeObjectURL(photoPreview);
+
+      const objectUrl = URL.createObjectURL(file);
+      setPhotoPreview(objectUrl);
     }
   };
 
@@ -56,24 +84,37 @@ export default function StepFour({ nextStep, prevStep }: Props) {
 
     if (form.idFront) formData.append("guardian_id_front", form.idFront);
     if (form.idBack) formData.append("guardian_id_back", form.idBack);
+    if (form.guardianPhoto)
+      formData.append("guardian_photo", form.guardianPhoto);
 
     const result = await dispatch(submitGuardianDetails(formData));
 
     if (submitGuardianDetails.fulfilled.match(result)) {
       toast.success("Guardian details saved successfully!");
+
+      // Update preview to actual URL returned by backend
+      const uploadedPhotoUrl = result.payload.guardian_photo;
+      if (uploadedPhotoUrl) {
+        setPhotoPreview(uploadedPhotoUrl); // this will now persist even on refresh
+      }
+
       nextStep();
     } else {
       toast.error("Failed to save guardian details. Please try again.");
     }
   };
 
-  // Revoke object URLs on unmount or when previews change
+  // Cleanup object URLs on unmount or when previews change
   useEffect(() => {
     return () => {
       frontPreview && URL.revokeObjectURL(frontPreview);
       backPreview && URL.revokeObjectURL(backPreview);
+      // Only revoke if it's a local file (not backend URL)
+      if (photoPreview && form.guardianPhoto) {
+        URL.revokeObjectURL(photoPreview);
+      }
     };
-  }, [frontPreview, backPreview]);
+  }, [frontPreview, backPreview, photoPreview, form.guardianPhoto]);
 
   const renderFileLabel = (file: File | null) =>
     file ? (
@@ -96,6 +137,50 @@ export default function StepFour({ nextStep, prevStep }: Props) {
       </p>
 
       <div className="space-y-6">
+        {/* Guardian Photo Upload */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Parent/Guardian Photo
+          </label>
+
+          <div
+            className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition"
+            onClick={() =>
+              document.getElementById("guardianPhotoInput")?.click()
+            }
+          >
+            {form.guardianPhoto ? (
+              <span className="text-gray-900 text-sm">
+                {form.guardianPhoto.name}
+              </span>
+            ) : (
+              <span className="text-gray-500 text-sm text-center">
+                Click to upload guardian photo
+                <br />
+                JPG, PNG (Max 5MB)
+              </span>
+            )}
+          </div>
+
+          <input
+            type="file"
+            id="guardianPhotoInput"
+            className="hidden"
+            onChange={handlePhotoChange}
+            accept=".jpg,.jpeg,.png"
+          />
+
+          {photoPreview && (
+            <div className="mt-3">
+              <img
+                src={photoPreview}
+                alt="Guardian Preview"
+                className="w-32 h-32 object-cover rounded-full border"
+              />
+            </div>
+          )}
+        </div>
+
         {/* Full Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">

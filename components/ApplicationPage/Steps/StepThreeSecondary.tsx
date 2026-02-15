@@ -119,7 +119,7 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
         {/* Class/Form */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Class / Form
+            Grade
           </label>
           <select
             name="classForm"
@@ -127,11 +127,10 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
             onChange={handleChange}
             className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           >
-            <option value="">Select Class/Form</option>
-            <option>Form 1</option>
-            <option>Form 2</option>
-            <option>Form 3</option>
-            <option>Form 4</option>
+            <option value="">Select Grade</option>
+            <option>Grade 10</option>
+            <option>Grade 11</option>
+            <option>Grade 12</option>
           </select>
         </div>
 
