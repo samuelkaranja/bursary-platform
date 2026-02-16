@@ -1,4 +1,4 @@
-export type Status = "pending" | "approved" | "rejected";
+export type Status = "submitted" | "pending" | "approved" | "rejected";
 
 export type ReviewDocument = {
   id: string;

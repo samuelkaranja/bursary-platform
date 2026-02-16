@@ -3,7 +3,7 @@ import type { Status } from "./types";
 
 export function StatusBadge({ status }: { status: Status }) {
   const cls =
-    status === "pending"
+    status === "pending" || status === "submitted"
       ? "bg-amber-100 text-amber-700"
       : status === "approved"
         ? "bg-emerald-100 text-emerald-700"
