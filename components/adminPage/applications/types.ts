@@ -1,4 +1,10 @@
-export type Status = "pending" | "approved" | "rejected";
+export type Status =
+  | "submitted"
+  | "under_review"
+  | "decision_pending"
+  | "approved"
+  | "rejected"
+  | "draft";
 export type Level = "Secondary" | "University";
 
 export type ApplicationRow = {

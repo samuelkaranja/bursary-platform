@@ -24,11 +24,22 @@ export const apiFetch = async (
     headers,
   });
 
-  const data = await response.json();
+  const contentType = response.headers.get("content-type") || "";
+  let data: any = null;
 
-  // Handle errors
+  if (contentType.includes("application/json")) {
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+  } else {
+    const text = await response.text().catch(() => "");
+    data = { detail: text };
+  }
+
   if (!response.ok) {
-    throw new Error(data.detail || "Something went wrong");
+    throw new Error(data?.detail || `Request failed (${response.status})`);
   }
 
   return data;

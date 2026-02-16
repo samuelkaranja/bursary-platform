@@ -7,7 +7,7 @@ export function ApplicationsTable({ rows }: { rows: ApplicationRow[] }) {
   return (
     <div className="mt-5 hidden md:block">
       <div className="overflow-x-auto rounded-2xl border border-slate-200">
-        <table className="min-w-[900px] w-full border-collapse bg-white">
+        <table className="min-w-225 w-full border-collapse bg-white">
           <thead>
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold text-slate-700">

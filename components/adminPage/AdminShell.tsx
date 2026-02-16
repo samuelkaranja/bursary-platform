@@ -42,7 +42,7 @@ export function AdminShell({
             className="absolute inset-0 bg-black/30"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="absolute left-0 top-0 h-full w-[280px] shadow-xl">
+          <div className="absolute left-0 top-0 h-full w-70 shadow-xl">
             <div className="relative h-full">
               <button
                 onClick={() => setMobileOpen(false)}
@@ -60,7 +60,7 @@ export function AdminShell({
 
       <div className="flex w-full">
         {/* Desktop sidebar */}
-        <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 md:block">
+        <aside className="sticky top-0 hidden h-screen w-70 shrink-0 md:block">
           <Sidebar />
         </aside>
 

@@ -18,7 +18,7 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
     fullName,
     institution: schoolNameFromRedux,
     registrationNumber: admissionNumberFromRedux,
-    nationalId: classFormFromRedux, // Using nationalId field in Redux for classForm
+    studentClassForm: classFormFromRedux,
   } = useSelector((state: RootState) => state.application);
 
   const [form, setForm] = useState({
@@ -150,8 +150,8 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
           >
             <option value="">Select Grade</option>
             <option>Grade 10</option>
-            <option>Grade 11</option>
-            <option>Grade 12</option>
+            <option>Form 3</option>
+            <option>Form 4</option>
           </select>
         </div>
 

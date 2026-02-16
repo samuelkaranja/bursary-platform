@@ -1,10 +1,12 @@
+"use client";
+
 import React from "react";
+import AdminGuard from "@/components/adminPage/guards/AdminGuard";
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Keep this minimal; per-page titles handled by AdminShell
-  return children;
+  return <AdminGuard>{children}</AdminGuard>;
 }

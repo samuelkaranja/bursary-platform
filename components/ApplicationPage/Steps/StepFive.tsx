@@ -19,14 +19,13 @@ export default function StepFive({ prevStep }: Props) {
   const router = useRouter();
   const [agree, setAgree] = useState(false);
 
-  const { loading, error, documents, ...application } = useSelector(
-    (state: RootState) => state.application,
-  );
+  const applicationState = useSelector((state: RootState) => state.application);
+  const { loading, error, documents } = applicationState;
   const token = useSelector((state: RootState) => state.auth.accessToken);
 
   const [allDocuments, setAllDocuments] = useState<any[]>([]);
   console.log(allDocuments);
-  console.log(application);
+  console.log(applicationState);
   // Fetch application on mount
   useEffect(() => {
     dispatch(fetchMyApplication())
@@ -39,54 +38,38 @@ export default function StepFive({ prevStep }: Props) {
 
   useEffect(() => {
     if (!documents || documents.length === 0) return;
+    if (!token) return;
 
     let objectUrls: string[] = [];
 
     const loadDocuments = async () => {
-      try {
-        const updatedDocs = await Promise.all(
-          documents.map(async (doc: any) => {
-            if (!doc.url) return doc;
+      const updatedDocs = await Promise.all(
+        documents.map(async (doc) => {
+          if (!doc.url) return doc;
 
-            try {
-              const response = await fetch(doc.url, {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              });
+          try {
+            const response = await fetch(doc.url, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!response.ok) throw new Error("Failed to fetch document");
 
-              if (!response.ok) {
-                throw new Error("Failed to fetch document");
-              }
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            objectUrls.push(objectUrl);
 
-              const blob = await response.blob();
-              const objectUrl = URL.createObjectURL(blob);
+            return { ...doc, previewUrl: objectUrl };
+          } catch {
+            return doc;
+          }
+        }),
+      );
 
-              objectUrls.push(objectUrl);
-
-              return {
-                ...doc,
-                previewUrl: objectUrl,
-              };
-            } catch (error) {
-              console.error("Error loading document:", doc.doc_type);
-              return doc;
-            }
-          }),
-        );
-
-        setAllDocuments(updatedDocs);
-      } catch (error) {
-        console.error("Error processing documents", error);
-      }
+      setAllDocuments(updatedDocs);
     };
 
     loadDocuments();
 
-    // Cleanup function to prevent memory leaks
-    return () => {
-      objectUrls.forEach((url) => URL.revokeObjectURL(url));
-    };
+    return () => objectUrls.forEach((u) => URL.revokeObjectURL(u));
   }, [documents, token]);
 
   const handleSubmit = async () => {
@@ -129,44 +112,44 @@ export default function StepFive({ prevStep }: Props) {
         {/* Account */}
         <div>
           <h3 className="font-semibold text-blue-900">Account Information</h3>
-          <p className="text-[14px] pb-1">
+          <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">Phone:</span>{" "}
-            {application.phone || "-"}
+            {applicationState.phone || "-"}
           </p>
         </div>
 
         {/* Student */}
         <div>
           <h3 className="font-semibold text-blue-900 mb-1">Student Details</h3>
-          <p className="text-[14px] pb-1">
+          <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">
               Full Name:
             </span>{" "}
-            {application.fullName || "-"}
+            {applicationState.fullName || "-"}
           </p>
-          <p className="text-[14px] pb-1">
+          <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">
               Education Level:
             </span>{" "}
-            {application.educationLevel || "-"}
+            {applicationState.educationLevel || "-"}
           </p>
-          <p className="text-[14px] pb-1">
+          <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">
               Institution:
             </span>{" "}
-            {application.institution || "-"}
+            {applicationState.institution || "-"}
           </p>
-          <p className="text-[14px] pb-1">
+          <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">
               ID Number:
             </span>{" "}
-            {application.nationalId || "-"}
+            {applicationState.nationalId || "-"}
           </p>
-          <p className="text-[14px] pb-1">
+          <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">
               Registration Number:
             </span>{" "}
-            {application.registrationNumber || "-"}
+            {applicationState.registrationNumber || "-"}
           </p>
         </div>
 
@@ -175,25 +158,25 @@ export default function StepFive({ prevStep }: Props) {
           <h3 className="font-semibold text-blue-900 mb-1">
             Parent/Guardian Details
           </h3>
-          <p className="text-[14px] pb-1">
+          <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">Name:</span>{" "}
-            {application.parentName || "-"}
+            {applicationState.parentName || "-"}
           </p>
-          <p className="text-[14px] pb-1">
+          <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">
               ID Number:
             </span>{" "}
-            {application.parentId || "-"}
+            {applicationState.parentId || "-"}
           </p>
-          <p className="text-[14px] pb-1">
+          <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">Phone:</span>{" "}
-            {application.parentPhone || "-"}
+            {applicationState.parentPhone || "-"}
           </p>
-          <p className="text-[14px] pb-1">
+          <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">
               Relationship:
             </span>{" "}
-            {application.relationship || "-"}
+            {applicationState.relationship || "-"}
           </p>
         </div>
 
@@ -214,7 +197,7 @@ export default function StepFive({ prevStep }: Props) {
                     key={index}
                     className="border border-gray-300 rounded-lg p-3 bg-gray-50"
                   >
-                    <p className="text-sm font-medium mb-2 capitalize">
+                    <p className="text-sm text-black font-medium mb-2 capitalize">
                       {doc.doc_type.replaceAll("_", " ")}
                     </p>
 

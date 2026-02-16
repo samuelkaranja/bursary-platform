@@ -5,28 +5,50 @@ import { RootState } from "../store";
 // -------------------
 // Types
 // -------------------
+
+export type ApplicationDocument = {
+  doc_type: string;
+  filename: string;
+  content_type: string;
+  url: string;
+  previewUrl?: string; // frontend-only (blob URL)
+  size_bytes?: number;
+  created_at?: string;
+};
+
+type TimelineItem = {
+  status: string;
+  message: string;
+  created_at: string;
+};
+
 interface ApplicationState {
   applicationId: number | null;
   educationLevel: string | null;
   status: string | null;
   trackingNumber: string | null;
-  timeline: any[];
-  documents: any[];
+
+  timeline: TimelineItem[];
+  documents: ApplicationDocument[];
+
   loading: boolean;
   error: string | null;
 
+  // student
   phone: string | null;
   fullName: string | null;
   institution: string | null;
   nationalId: string | null;
   registrationNumber: string | null;
-  studentClassForm: string | null; // NEW FIELD
+  studentClassForm: string | null;
 
+  // guardian
   parentName: string | null;
   parentId: string | null;
   parentPhone: string | null;
   relationship: string | null;
   guardianPhoto: string | null;
+  guardianYearOfBirth: number | null;
 }
 
 const initialState: ApplicationState = {
@@ -34,8 +56,10 @@ const initialState: ApplicationState = {
   educationLevel: null,
   status: null,
   trackingNumber: null,
+
   timeline: [],
   documents: [],
+
   error: null,
   loading: false,
 
@@ -44,18 +68,20 @@ const initialState: ApplicationState = {
   institution: null,
   nationalId: null,
   registrationNumber: null,
-  studentClassForm: null, // NEW FIELD
+  studentClassForm: null,
 
   parentName: null,
   parentId: null,
   parentPhone: null,
   relationship: null,
   guardianPhoto: null,
+  guardianYearOfBirth: null,
 };
 
 // -------------------
 // Async Thunks
 // -------------------
+
 export const createDraft = createAsyncThunk(
   "application/createDraft",
   async (education_level: string, { getState }) => {
@@ -143,6 +169,7 @@ export const fetchMyApplication = createAsyncThunk(
     const token = state.auth.accessToken;
 
     try {
+      // /applications/me returns: { application, timeline, documents }
       const data = await apiFetch("/applications/me", {}, token!);
       return data;
     } catch (error: any) {
@@ -159,23 +186,7 @@ const applicationSlice = createSlice({
   initialState,
   reducers: {
     clearApplication(state) {
-      state.applicationId = null;
-      state.educationLevel = null;
-      state.status = null;
-      state.trackingNumber = null;
-
-      state.phone = null;
-      state.fullName = null;
-      state.institution = null;
-      state.nationalId = null;
-      state.registrationNumber = null;
-      state.studentClassForm = null;
-
-      state.parentName = null;
-      state.parentId = null;
-      state.parentPhone = null;
-      state.relationship = null;
-      state.guardianPhoto = null;
+      Object.assign(state, initialState);
     },
   },
   extraReducers: (builder) => {
@@ -183,6 +194,7 @@ const applicationSlice = createSlice({
       // CREATE DRAFT
       .addCase(createDraft.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(createDraft.fulfilled, (state, action) => {
         state.loading = false;
@@ -190,66 +202,76 @@ const applicationSlice = createSlice({
         state.educationLevel = action.payload.education_level;
         state.status = action.payload.status;
       })
-      .addCase(createDraft.rejected, (state) => {
+      .addCase(createDraft.rejected, (state, action: any) => {
         state.loading = false;
+        state.error = action.error?.message ?? "Failed to create draft";
       })
 
       // STUDENT DETAILS
       .addCase(submitStudentDetails.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(submitStudentDetails.fulfilled, (state, action) => {
         state.loading = false;
 
-        state.phone = action.payload.phone || state.phone;
-        state.fullName = action.payload.student_full_name || state.fullName;
+        state.phone = action.payload.phone ?? state.phone;
+        state.fullName = action.payload.student_full_name ?? state.fullName;
         state.institution =
-          action.payload.institution_name || state.institution;
-        state.nationalId = action.payload.student_id_number || state.nationalId;
+          action.payload.institution_name ?? state.institution;
+        state.nationalId = action.payload.student_id_number ?? state.nationalId;
         state.registrationNumber =
-          action.payload.student_registration_number ||
+          action.payload.student_registration_number ??
           state.registrationNumber;
+
         state.studentClassForm =
-          action.payload.student_class_form || state.studentClassForm; // ✅ NEW
+          action.payload.student_class_form ?? state.studentClassForm;
       })
-      .addCase(submitStudentDetails.rejected, (state) => {
+      .addCase(submitStudentDetails.rejected, (state, action: any) => {
         state.loading = false;
+        state.error = action.error?.message ?? "Failed to save student details";
       })
 
       // GUARDIAN DETAILS
       .addCase(submitGuardianDetails.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(submitGuardianDetails.fulfilled, (state, action) => {
         state.loading = false;
 
         state.parentName =
-          action.payload.guardian_full_name || state.parentName;
-        state.parentId = action.payload.guardian_id_number || state.parentId;
-        state.parentPhone = action.payload.guardian_phone || state.parentPhone;
+          action.payload.guardian_full_name ?? state.parentName;
+        state.parentId = action.payload.guardian_id_number ?? state.parentId;
+        state.parentPhone = action.payload.guardian_phone ?? state.parentPhone;
         state.relationship =
-          action.payload.guardian_relationship || state.relationship;
+          action.payload.guardian_relationship ?? state.relationship;
+
         state.guardianPhoto =
-          action.payload.guardian_photo || state.guardianPhoto;
+          action.payload.guardian_photo ?? state.guardianPhoto;
       })
-      .addCase(submitGuardianDetails.rejected, (state) => {
+      .addCase(submitGuardianDetails.rejected, (state, action: any) => {
         state.loading = false;
+        state.error =
+          action.error?.message ?? "Failed to save guardian details";
       })
 
       // SUBMIT APPLICATION
       .addCase(submitApplication.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
       .addCase(submitApplication.fulfilled, (state, action) => {
         state.loading = false;
         state.trackingNumber = action.payload.tracking_number;
         state.status = "submitted";
       })
-      .addCase(submitApplication.rejected, (state) => {
+      .addCase(submitApplication.rejected, (state, action: any) => {
         state.loading = false;
+        state.error = action.error?.message ?? "Failed to submit application";
       })
 
-      // FETCHING APPLICATION DETAILS
+      // FETCH MY APPLICATION (IMPORTANT FIX)
       .addCase(fetchMyApplication.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -257,31 +279,38 @@ const applicationSlice = createSlice({
       .addCase(fetchMyApplication.fulfilled, (state, action) => {
         state.loading = false;
 
-        const { application, timeline, documents } = action.payload;
+        const p = action.payload; // { application, timeline, documents }
+        const a = p?.application;
 
-        state.applicationId = application.id;
-        state.educationLevel = application.education_level;
-        state.status = application.status;
-        state.trackingNumber = application.tracking_number;
+        state.applicationId = a?.id ?? null;
+        state.educationLevel = a?.education_level ?? null;
+        state.status = a?.status ?? null;
+        state.trackingNumber = a?.tracking_number ?? null;
 
-        state.phone = application.phone;
-        state.fullName = application.student_full_name;
-        state.institution = application.institution_name;
-        state.registrationNumber = application.student_registration_number;
-        state.nationalId = application.student_id_number;
-        state.studentClassForm = application.student_class_form; // ✅ NEW
+        state.phone = a?.phone ?? null;
+        state.fullName = a?.student_full_name ?? null;
+        state.institution = a?.institution_name ?? null;
+        state.registrationNumber = a?.student_registration_number ?? null;
+        state.nationalId = a?.student_id_number ?? null;
+        state.studentClassForm = a?.student_class_form ?? null;
 
-        state.parentName = application.guardian_full_name;
-        state.parentId = application.guardian_id_number;
-        state.parentPhone = application.guardian_phone;
-        state.relationship = application.guardian_relationship;
+        state.parentName = a?.guardian_full_name ?? null;
+        state.parentId = a?.guardian_id_number ?? null;
+        state.parentPhone = a?.guardian_phone ?? null;
+        state.relationship = a?.guardian_relationship ?? null;
+        state.guardianYearOfBirth = a?.guardian_year_of_birth ?? null;
 
-        state.timeline = timeline;
-        state.documents = documents;
+        // Not in your /me response currently
+        state.guardianPhoto = null;
+
+        state.timeline = p?.timeline ?? [];
+
+        // Keep docs exactly as backend returns
+        state.documents = p?.documents ?? [];
       })
       .addCase(fetchMyApplication.rejected, (state, action: any) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload ?? "Failed to fetch application";
       });
   },
 });

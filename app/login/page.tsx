@@ -27,18 +27,27 @@ export default function TrackApplicationLoginPage() {
     }
 
     try {
-      // 1️⃣ Login
-      await dispatch(loginUser({ phone, password })).unwrap();
+      const authPayload = await dispatch(
+        loginUser({ phone, password }),
+      ).unwrap();
+      console.log("AUTH PAYLOAD:", authPayload);
 
-      // 2️⃣ Fetch application data
-      await dispatch(fetchMyApplication()).unwrap();
+      // normalize role to avoid "Admin"/"ADMIN"/" admin " mismatches
+      const role = String(authPayload?.role ?? "")
+        .toLowerCase()
+        .trim();
 
       toast.success("Login successful");
 
-      // 3️⃣ Redirect
-      router.push("/status"); // change if your route is different
+      if (role === "admin") {
+        router.push("/admin/dashboard");
+        return;
+      }
+
+      // applicant flow only
+      router.push("/status");
     } catch (error: any) {
-      toast.error(error || "Login failed");
+      toast.error(String(error || "Login failed"));
     }
   };
 

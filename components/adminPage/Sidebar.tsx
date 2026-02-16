@@ -1,17 +1,15 @@
 "use client";
 
 import React from "react";
-import {
-  LayoutDashboard,
-  FileText,
-  School,
-  Download,
-  Settings,
-  ArrowLeft,
-  LogOut,
-} from "lucide-react";
+import { LayoutDashboard, FileText, ArrowLeft, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+
+import { logout } from "@/redux/features/authSlice";
+import { clearAdmin } from "@/redux/features/adminSlice";
+import { clearApplication } from "@/redux/features/applicationSlice";
+import { AppDispatch } from "@/redux/store";
 
 type NavItem = {
   label: string;
@@ -30,42 +28,33 @@ const NAV: NavItem[] = [
     href: "/admin/applications",
     icon: <FileText className="h-5 w-5" />,
   },
-  // {
-  //   label: "Schools",
-  //   href: "/admin/schools",
-  //   icon: <School className="h-5 w-5" />,
-  // },
-  // {
-  //   label: "Exports",
-  //   href: "/admin/exports",
-  //   icon: <Download className="h-5 w-5" />,
-  // },
-  // {
-  //   label: "Settings",
-  //   href: "/admin/settings",
-  //   icon: <Settings className="h-5 w-5" />,
-  // },
 ];
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
+  const dispatch = useDispatch<AppDispatch>();
 
   async function handleLogout() {
-    // try {
-    //   🔥 Replace with your real logout logic
-    //   Example if using cookies:
-    //   await fetch("/api/auth/logout", { method: "POST" });
-    //   Example if using localStorage token:
-    //   localStorage.removeItem("token");
-    //   router.push("/login");
-    // } catch (err) {
-    //   console.error("Logout failed", err);
-    // }
+    try {
+      // 1️⃣ Clear Redux state
+      dispatch(logout());
+      dispatch(clearAdmin());
+      dispatch(clearApplication());
+
+      // 2️⃣ Remove localStorage tokens (extra safety)
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      // 3️⃣ Replace instead of push (prevents back button returning to admin)
+      router.replace("/login"); // or "/" if you prefer homepage
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
   }
 
   return (
-    <aside className="flex h-full flex-col w-[280px] bg-[#173B8F] text-white">
+    <aside className="flex h-full flex-col w-70 bg-[#173B8F] text-white">
       <div className="px-6 py-6">
         <div className="text-lg font-semibold">Admin Portal</div>
         <div className="text-xs text-white/70">Bursary Management</div>
@@ -82,6 +71,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={false}
               onClick={onNavigate}
               className={[
                 "flex items-center gap-3 rounded-xl px-4 py-3 text-sm transition",
@@ -97,7 +87,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Bottom Section */}
       <div className="mt-auto px-3 pb-6 space-y-2">
-        {/* Logout Button */}
         <button
           onClick={handleLogout}
           className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-white hover:bg-red-500/20 transition"
@@ -106,7 +95,6 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           Logout
         </button>
 
-        {/* Back to Website */}
         <Link
           href="/"
           className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-white/90 hover:bg-white/10"

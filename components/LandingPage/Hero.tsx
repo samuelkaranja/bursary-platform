@@ -40,12 +40,13 @@ export default function Hero() {
 
         {/* Right */}
         <div className="relative flex justify-center">
-          <div className="relative w-[280px] md:w-[350px] h-[380px] rounded-xl overflow-hidden border border-white/20 shadow-2xl">
+          <div className="relative w-70 md:w-87.5 h-95 rounded-xl overflow-hidden border border-white/20 shadow-2xl">
             <Image
               src="/Hon-Chege-Njuguna.png"
               alt="Member of Parliament"
               fill
               className="object-cover"
+              loading="eager"
             />
           </div>
 

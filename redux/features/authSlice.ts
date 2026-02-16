@@ -1,16 +1,22 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { apiFetch } from "../api";
 
+type UserRole = "applicant" | "admin" | string;
+
 interface AuthState {
   accessToken: string | null;
   isAuthenticated: boolean;
   loading: boolean;
+  role: UserRole | null;
+  hydrated: boolean;
 }
 
 const initialState: AuthState = {
   accessToken: null,
   isAuthenticated: false,
   loading: false,
+  role: null,
+  hydrated: false,
 };
 
 export const registerUser = createAsyncThunk(
@@ -25,9 +31,8 @@ export const registerUser = createAsyncThunk(
         body: JSON.stringify({ phone, password }),
       });
 
-      return data;
+      return data; // expect: { access_token, role, ... }
     } catch (error: any) {
-      // If already exists → login automatically
       if (error.message === "Applicant already exists") {
         try {
           const loginData = await apiFetch("/auth/login", {
@@ -35,7 +40,7 @@ export const registerUser = createAsyncThunk(
             body: JSON.stringify({ phone, password }),
           });
 
-          return loginData;
+          return loginData; // expect: { access_token, role, ... }
         } catch (loginError: any) {
           return rejectWithValue(loginError.message);
         }
@@ -58,7 +63,7 @@ export const loginUser = createAsyncThunk(
         body: JSON.stringify({ phone, password }),
       });
 
-      return data;
+      return data; // expect: { access_token, role, ... }
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -72,6 +77,27 @@ const authSlice = createSlice({
     logout(state) {
       state.accessToken = null;
       state.isAuthenticated = false;
+      state.role = null;
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    },
+    hydrateAuth(state) {
+      // Optional helper if you want to hydrate on app load
+      const token = localStorage.getItem("token");
+      const userRaw = localStorage.getItem("user");
+
+      if (token) {
+        state.accessToken = token;
+        state.isAuthenticated = true;
+      }
+      if (userRaw) {
+        try {
+          const user = JSON.parse(userRaw);
+          state.role = user?.role ?? null;
+        } catch {}
+      }
+
+      state.hydrated = true;
     },
   },
   extraReducers: (builder) => {
@@ -83,8 +109,13 @@ const authSlice = createSlice({
         state.loading = false;
         state.accessToken = action.payload.access_token;
         state.isAuthenticated = true;
+        state.role = action.payload.role ?? null;
 
         localStorage.setItem("token", action.payload.access_token);
+        localStorage.setItem(
+          "user",
+          JSON.stringify({ role: action.payload.role ?? null }),
+        );
       })
       .addCase(registerUser.rejected, (state) => {
         state.loading = false;
@@ -97,8 +128,13 @@ const authSlice = createSlice({
         state.loading = false;
         state.accessToken = action.payload.access_token;
         state.isAuthenticated = true;
+        state.role = action.payload.role ?? null;
 
         localStorage.setItem("token", action.payload.access_token);
+        localStorage.setItem(
+          "user",
+          JSON.stringify({ role: action.payload.role ?? null }),
+        );
       })
       .addCase(loginUser.rejected, (state) => {
         state.loading = false;
@@ -106,5 +142,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout } = authSlice.actions;
+export const { logout, hydrateAuth } = authSlice.actions;
 export default authSlice.reducer;
