@@ -114,7 +114,7 @@ export const exportApprovedCsv = createAsyncThunk(
     if (date_to) params.set("date_to", date_to);
     if (sort_dir) params.set("sort_dir", sort_dir);
 
-    const url = `https://bursary-platform-backend.fly.dev/api/v1/admin/applications/export-approved.csv?${params.toString()}`;
+    const url = `https://api.kandarabursary.com/api/v1/admin/applications/export-approved.csv?${params.toString()}`;
 
     try {
       const res = await fetch(url, {

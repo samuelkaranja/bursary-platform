@@ -100,7 +100,7 @@ export function ApplicationReviewClient({ id }: { id: string }) {
     try {
       // API expects form-urlencoded; use fetch directly
       const response = await fetch(
-        `https://bursary-platform-backend.fly.dev/api/v1/admin/applications/${id}/reject`,
+        `https://api.kandarabursary.com/api/v1/admin/applications/${id}/reject`,
         {
           method: "POST",
           headers: {

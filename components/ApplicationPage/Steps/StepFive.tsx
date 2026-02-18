@@ -219,7 +219,7 @@ export default function StepFive({ prevStep }: Props) {
                         </a>
                       )
                     ) : (
-                      <p className="text-sm text-gray-500">Not uploaded</p>
+                      <p className="text-sm text-black">Not uploaded</p>
                     )}
                   </div>
                 );

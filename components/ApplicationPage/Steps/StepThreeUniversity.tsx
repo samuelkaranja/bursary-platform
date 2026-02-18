@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
 import { submitStudentDetails } from "@/redux/features/applicationSlice";
@@ -11,54 +12,78 @@ interface Props {
   prevStep: () => void;
 }
 
+interface FormValues {
+  fullName: string;
+  institution: string;
+  nationalId: string;
+  registrationNumber: string;
+  admissionLetter: FileList;
+}
+
 export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
   const dispatch = useDispatch<AppDispatch>();
   const { loading, fullName, institution, nationalId, registrationNumber } =
     useSelector((state: RootState) => state.application);
 
-  const [form, setForm] = useState({
-    fullName: "",
-    institution: "",
-    nationalId: "",
-    registrationNumber: "",
-    admissionLetter: null as File | null,
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<FormValues>({
+    defaultValues: {
+      fullName: "",
+      institution: "",
+      nationalId: "",
+      registrationNumber: "",
+    },
   });
 
   const [previewURL, setPreviewURL] = useState<string | null>(null);
 
-  // Prefill from Redux state
+  // Watch file input
+  const admissionLetter = watch("admissionLetter");
+
+  // Prefill from Redux (Cleaner with reset)
   useEffect(() => {
-    setForm((prev) => ({
-      ...prev,
+    reset({
       fullName: fullName || "",
       institution: institution || "",
       nationalId: nationalId || "",
       registrationNumber: registrationNumber || "",
-    }));
-  }, [fullName, institution, nationalId, registrationNumber]);
+    });
+  }, [fullName, institution, nationalId, registrationNumber, reset]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  // File preview handling
+  useEffect(() => {
+    if (admissionLetter && admissionLetter.length > 0) {
+      const file = admissionLetter[0];
+      const url = URL.createObjectURL(file);
+      setPreviewURL(url);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      setForm({ ...form, admissionLetter: e.target.files[0] });
-      setPreviewURL(URL.createObjectURL(e.target.files[0]));
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    } else {
+      setPreviewURL(null);
     }
-  };
+  }, [admissionLetter]);
 
-  const handleNext = async () => {
+  const onSubmit = async (data: FormValues) => {
     const formData = new FormData();
-    formData.append("student_full_name", form.fullName);
-    formData.append("institution_name", form.institution);
-    formData.append("student_registration_number", form.registrationNumber);
-    formData.append("student_id_number", form.nationalId);
 
-    if (form.admissionLetter)
-      formData.append("admission_letter", form.admissionLetter);
+    formData.append("student_full_name", data.fullName);
+    formData.append("institution_name", data.institution);
+    formData.append("student_registration_number", data.registrationNumber);
+    formData.append("student_id_number", data.nationalId);
+
+    if (data.admissionLetter?.[0]) {
+      formData.append("admission_letter", data.admissionLetter[0]);
+    }
 
     const result = await dispatch(submitStudentDetails(formData));
+
     if (submitStudentDetails.fulfilled.match(result)) {
       toast.success("Student details saved successfully!");
       nextStep();
@@ -67,70 +92,96 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
     }
   };
 
-  useEffect(() => {
-    return () => {
-      previewURL && URL.revokeObjectURL(previewURL);
-    };
-  }, [previewURL]);
-
   return (
-    <div>
+    <form onSubmit={handleSubmit(onSubmit)}>
       <h2 className="text-xl font-semibold text-gray-900">Student Details</h2>
       <p className="text-gray-500 mt-1 mb-8">
         Provide your university/college information
       </p>
 
       <div className="space-y-6">
+        {/* Full Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Full Name
           </label>
           <input
-            name="fullName"
-            value={form.fullName}
-            onChange={handleChange}
+            {...register("fullName", {
+              required: "Full name is required",
+            })}
             placeholder="Enter your full name"
             className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
+          {errors.fullName && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.fullName.message}
+            </p>
+          )}
         </div>
 
+        {/* Institution */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Institution Name
           </label>
           <input
-            name="institution"
-            value={form.institution}
-            onChange={handleChange}
+            {...register("institution", {
+              required: "Institution name is required",
+            })}
             placeholder="Enter your institution name"
             className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
+          {errors.institution && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.institution.message}
+            </p>
+          )}
         </div>
 
+        {/* National ID */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             National ID Number
           </label>
           <input
-            name="nationalId"
-            value={form.nationalId}
-            onChange={handleChange}
+            {...register("nationalId", {
+              required: "National ID is required",
+              pattern: {
+                value: /^[0-9]+$/,
+                message: "National ID must contain only numbers",
+              },
+              minLength: {
+                value: 6,
+                message: "Invalid ID number",
+              },
+            })}
             placeholder="Enter your ID number"
             className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
+          {errors.nationalId && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.nationalId.message}
+            </p>
+          )}
         </div>
 
+        {/* Registration Number */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Student Registration Number
           </label>
           <input
-            name="registrationNumber"
-            value={form.registrationNumber}
-            onChange={handleChange}
+            {...register("registrationNumber", {
+              required: "Registration number is required",
+            })}
             placeholder="Enter registration number"
             className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
+          {errors.registrationNumber && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.registrationNumber.message}
+            </p>
+          )}
         </div>
 
         {/* Admission Letter Upload */}
@@ -138,8 +189,9 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
           <label className="block text-sm font-medium text-gray-700 mb-3">
             Admission Letter
           </label>
+
           <label className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition relative">
-            {!form.admissionLetter ? (
+            {!admissionLetter?.[0] ? (
               <span className="text-gray-500 text-sm text-center">
                 Click to upload or drag and drop
                 <br />
@@ -147,16 +199,32 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
               </span>
             ) : (
               <span className="text-gray-900 text-sm text-center">
-                {form.admissionLetter.name}
+                {admissionLetter[0].name}
               </span>
             )}
+
             <input
               type="file"
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              onChange={handleFileChange}
               accept=".pdf,.jpg,.jpeg,.png"
+              {...register("admissionLetter", {
+                validate: (files) => {
+                  if (!files || files.length === 0) return true;
+                  const file = files[0];
+                  if (file.size > 5 * 1024 * 1024) {
+                    return "File size must be less than 5MB";
+                  }
+                  return true;
+                },
+              })}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
           </label>
+
+          {errors.admissionLetter && (
+            <p className="text-red-500 text-sm mt-2">
+              {errors.admissionLetter.message as string}
+            </p>
+          )}
 
           {previewURL && (
             <p className="mt-2 text-blue-700 text-sm underline">
@@ -168,8 +236,10 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
         </div>
       </div>
 
+      {/* Navigation Buttons */}
       <div className="flex justify-between items-center mt-10">
         <button
+          type="button"
           onClick={prevStep}
           className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
         >
@@ -177,13 +247,13 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
         </button>
 
         <button
-          onClick={handleNext}
+          type="submit"
           disabled={loading}
           className="px-6 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg transition flex items-center gap-2 disabled:opacity-50"
         >
           {loading ? "Saving details..." : "Next →"}
         </button>
       </div>
-    </div>
+    </form>
   );
 }

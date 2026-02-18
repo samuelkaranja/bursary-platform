@@ -1,38 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
 import { AppDispatch, RootState } from "@/redux/store";
 import { loginUser } from "@/redux/features/authSlice";
-import { fetchMyApplication } from "@/redux/features/applicationSlice";
 import toast from "react-hot-toast";
+
+interface LoginFormValues {
+  phone: string;
+  password: string;
+}
 
 export default function TrackApplicationLoginPage() {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-
   const { loading } = useSelector((state: RootState) => state.auth);
 
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormValues>({
+    mode: "onBlur", // validates when user leaves input
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!phone || !password) {
-      toast.error("Please enter phone and password");
-      return;
-    }
-
+  const onSubmit = async (data: LoginFormValues) => {
     try {
-      const authPayload = await dispatch(
-        loginUser({ phone, password }),
-      ).unwrap();
-      console.log("AUTH PAYLOAD:", authPayload);
+      const authPayload = await dispatch(loginUser(data)).unwrap();
 
-      // normalize role to avoid "Admin"/"ADMIN"/" admin " mismatches
       const role = String(authPayload?.role ?? "")
         .toLowerCase()
         .trim();
@@ -44,7 +41,6 @@ export default function TrackApplicationLoginPage() {
         return;
       }
 
-      // applicant flow only
       router.push("/status");
     } catch (error: any) {
       toast.error(String(error || "Login failed"));
@@ -69,7 +65,7 @@ export default function TrackApplicationLoginPage() {
             Enter your credentials to access your application
           </p>
 
-          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          <form className="mt-6 space-y-4" onSubmit={handleSubmit(onSubmit)}>
             {/* Phone */}
             <div>
               <label
@@ -83,15 +79,25 @@ export default function TrackApplicationLoginPage() {
                 <PhoneIcon />
                 <input
                   id="phone"
-                  name="phone"
                   type="tel"
                   placeholder="0712345678"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
                   autoComplete="tel"
+                  className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
+                  {...register("phone", {
+                    required: "Phone number is required",
+                    pattern: {
+                      value: /^0\d{9}$/,
+                      message: "Enter a valid phone number (e.g. 0712345678)",
+                    },
+                  })}
                 />
               </div>
+
+              {errors.phone && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.phone.message}
+                </p>
+              )}
             </div>
 
             {/* Password */}
@@ -107,18 +113,28 @@ export default function TrackApplicationLoginPage() {
                 <LockIcon />
                 <input
                   id="password"
-                  name="password"
                   type="password"
                   placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
                   autoComplete="current-password"
+                  className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
+                  {...register("password", {
+                    required: "Password is required",
+                    minLength: {
+                      value: 6,
+                      message: "Password must be at least 6 characters",
+                    },
+                  })}
                 />
               </div>
+
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
-            {/* Button */}
+            {/* Submit Button */}
             <button
               type="submit"
               disabled={loading}
@@ -144,7 +160,8 @@ export default function TrackApplicationLoginPage() {
   );
 }
 
-/** Icons unchanged */
+/* ---------------- Icons (Unchanged) ---------------- */
+
 function PhoneIcon() {
   return (
     <svg

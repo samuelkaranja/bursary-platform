@@ -1,4 +1,4 @@
-const BASE_URL = "https://bursary-platform-backend.fly.dev/api/v1";
+const BASE_URL = "https://api.kandarabursary.com/api/v1";
 
 export const apiFetch = async (
   endpoint: string,

@@ -37,7 +37,7 @@ export function DocumentsSection({
 
   useEffect(() => {
     const controllers: Record<string, AbortController> = {};
-    const BACKEND_ORIGIN = "https://bursary-platform-backend.fly.dev";
+    const BACKEND_ORIGIN = "https://api.kandarabursary.com";
     documents.forEach((doc) => {
       const href = doc.href || "";
       if (!href) {
@@ -130,7 +130,7 @@ export function DocumentsSection({
         {documents.map((doc) => {
           const state = map[doc.id] ?? { loading: true };
           const href = doc.href || "";
-          const BACKEND_ORIGIN = "https://bursary-platform-backend.fly.dev";
+          const BACKEND_ORIGIN = "https://api.kandarabursary.com";
           const fetchUrl = href.startsWith("http")
             ? href
             : `${BACKEND_ORIGIN}${href.startsWith("/") ? "" : "/"}${href}`;

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
 import { submitStudentDetails } from "@/redux/features/applicationSlice";
@@ -11,64 +12,69 @@ interface Props {
   prevStep: () => void;
 }
 
+interface FormValues {
+  fullName: string;
+  schoolName: string;
+  admissionNumber: string;
+  classForm: string;
+  birthCertificate: FileList;
+}
+
 export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
   const dispatch = useDispatch<AppDispatch>();
+
   const {
     loading,
     fullName,
-    institution: schoolNameFromRedux,
-    registrationNumber: admissionNumberFromRedux,
-    studentClassForm: classFormFromRedux,
+    institution,
+    registrationNumber,
+    studentClassForm,
   } = useSelector((state: RootState) => state.application);
 
-  const [form, setForm] = useState({
-    fullName: "",
-    schoolName: "",
-    admissionNumber: "",
-    classForm: "",
-    birthCertificate: null as File | null,
-  });
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<FormValues>();
 
   const [previewURL, setPreviewURL] = useState<string | null>(null);
 
-  // Prefill from Redux state
+  const watchedFile = watch("birthCertificate");
+
+  // Prefill form from Redux state
   useEffect(() => {
-    setForm((prev) => ({
-      ...prev,
+    reset({
       fullName: fullName || "",
-      schoolName: schoolNameFromRedux || "",
-      admissionNumber: admissionNumberFromRedux || "",
-      classForm: classFormFromRedux || "",
-    }));
-  }, [
-    fullName,
-    schoolNameFromRedux,
-    admissionNumberFromRedux,
-    classFormFromRedux,
-  ]);
+      schoolName: institution || "",
+      admissionNumber: registrationNumber || "",
+      classForm: studentClassForm || "",
+    });
+  }, [fullName, institution, registrationNumber, studentClassForm, reset]);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  // File preview effect
+  useEffect(() => {
+    if (watchedFile && watchedFile.length > 0) {
+      const file = watchedFile[0];
+      const url = URL.createObjectURL(file);
+      setPreviewURL(url);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      setForm({ ...form, birthCertificate: e.target.files[0] });
-      setPreviewURL(URL.createObjectURL(e.target.files[0]));
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setPreviewURL(null);
     }
-  };
+  }, [watchedFile]);
 
-  const handleNext = async () => {
+  const onSubmit = async (data: FormValues) => {
     const formData = new FormData();
-    formData.append("student_full_name", form.fullName);
-    formData.append("institution_name", form.schoolName);
-    formData.append("student_registration_number", form.admissionNumber);
-    formData.append("student_class_form", form.classForm);
+    formData.append("student_full_name", data.fullName);
+    formData.append("institution_name", data.schoolName);
+    formData.append("student_registration_number", data.admissionNumber);
+    formData.append("student_class_form", data.classForm);
 
-    if (form.birthCertificate) {
-      formData.append("birth_certificate", form.birthCertificate);
+    if (data.birthCertificate?.[0]) {
+      formData.append("birth_certificate", data.birthCertificate[0]);
     }
 
     const result = await dispatch(submitStudentDetails(formData));
@@ -81,132 +87,151 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
     }
   };
 
-  useEffect(() => {
-    return () => {
-      previewURL && URL.revokeObjectURL(previewURL);
-    };
-  }, [previewURL]);
-
   return (
-    <div>
-      <h2 className="text-xl font-semibold text-gray-900">Student Details</h2>
-      <p className="text-gray-500 mt-1 mb-8">
-        Provide your secondary school information
-      </p>
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900">Student Details</h2>
+        <p className="text-gray-500 mt-1 mb-8">
+          Provide your secondary school information
+        </p>
 
-      <div className="space-y-6">
-        {/* Full Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Full Name
-          </label>
-          <input
-            name="fullName"
-            value={form.fullName}
-            onChange={handleChange}
-            placeholder="Enter your full name"
-            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
-          />
-        </div>
-
-        {/* School Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            School Name
-          </label>
-          <input
-            name="schoolName"
-            value={form.schoolName}
-            onChange={handleChange}
-            placeholder="Enter your school name"
-            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
-          />
-        </div>
-
-        {/* Admission Number */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Admission Number
-          </label>
-          <input
-            name="admissionNumber"
-            value={form.admissionNumber}
-            onChange={handleChange}
-            placeholder="Enter admission number"
-            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
-          />
-        </div>
-
-        {/* Class/Form */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Grade
-          </label>
-          <select
-            name="classForm"
-            value={form.classForm}
-            onChange={handleChange}
-            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
-          >
-            <option value="">Select Grade</option>
-            <option>Grade 10</option>
-            <option>Form 3</option>
-            <option>Form 4</option>
-          </select>
-        </div>
-
-        {/* Birth Certificate Upload */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Birth Certificate
-          </label>
-          <label className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition relative">
-            {!form.birthCertificate ? (
-              <span className="text-gray-500 text-sm text-center">
-                Click to upload or drag and drop
-                <br />
-                PDF, JPG, PNG (Max 5MB)
-              </span>
-            ) : (
-              <span className="text-gray-900 text-sm text-center">
-                {form.birthCertificate.name}
-              </span>
-            )}
+        <div className="space-y-6">
+          {/* Full Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Full Name
+            </label>
             <input
-              type="file"
-              onChange={handleFileChange}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              accept=".pdf,.jpg,.jpeg,.png"
+              {...register("fullName", {
+                required: "Full name is required",
+              })}
+              placeholder="Enter your full name"
+              className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
             />
-          </label>
+            {errors.fullName && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.fullName.message}
+              </p>
+            )}
+          </div>
 
-          {previewURL && (
-            <p className="mt-2 text-blue-700 text-sm underline">
-              <a href={previewURL} target="_blank" rel="noopener noreferrer">
-                View Uploaded File
-              </a>
-            </p>
-          )}
+          {/* School Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              School Name
+            </label>
+            <input
+              {...register("schoolName", {
+                required: "School name is required",
+              })}
+              placeholder="Enter your school name"
+              className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            />
+            {errors.schoolName && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.schoolName.message}
+              </p>
+            )}
+          </div>
+
+          {/* Admission Number */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Admission Number
+            </label>
+            <input
+              {...register("admissionNumber", {
+                required: "Admission number is required",
+              })}
+              placeholder="Enter admission number"
+              className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            />
+            {errors.admissionNumber && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.admissionNumber.message}
+              </p>
+            )}
+          </div>
+
+          {/* Grade / Form */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Grade
+            </label>
+            <select
+              {...register("classForm", {
+                required: "Please select a grade",
+              })}
+              className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            >
+              <option value="">Select Grade</option>
+              <option value="Grade 10">Grade 10</option>
+              <option value="Form 3">Form 3</option>
+              <option value="Form 4">Form 4</option>
+            </select>
+            {errors.classForm && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.classForm.message}
+              </p>
+            )}
+          </div>
+
+          {/* Birth Certificate Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Birth Certificate
+            </label>
+
+            <label className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition relative">
+              {!watchedFile?.length ? (
+                <span className="text-gray-500 text-sm text-center">
+                  Click to upload or drag and drop
+                  <br />
+                  PDF, JPG, PNG (Max 5MB)
+                </span>
+              ) : (
+                <span className="text-gray-900 text-sm text-center">
+                  {watchedFile[0].name}
+                </span>
+              )}
+
+              <input
+                type="file"
+                {...register("birthCertificate")}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                accept=".pdf,.jpg,.jpeg,.png"
+              />
+            </label>
+
+            {previewURL && (
+              <p className="mt-2 text-blue-700 text-sm underline">
+                <a href={previewURL} target="_blank" rel="noopener noreferrer">
+                  View Uploaded File
+                </a>
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Buttons */}
+        <div className="flex justify-between items-center mt-10">
+          <button
+            type="button"
+            onClick={prevStep}
+            className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
+          >
+            ← Previous
+          </button>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="px-6 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg transition flex items-center gap-2 disabled:opacity-50"
+          >
+            {loading ? "Saving details..." : "Next →"}
+          </button>
         </div>
       </div>
-
-      {/* Buttons */}
-      <div className="flex justify-between items-center mt-10">
-        <button
-          onClick={prevStep}
-          className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-        >
-          ← Previous
-        </button>
-
-        <button
-          onClick={handleNext}
-          disabled={loading}
-          className="px-6 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg transition flex items-center gap-2 disabled:opacity-50"
-        >
-          {loading ? "Saving details..." : "Next →"}
-        </button>
-      </div>
-    </div>
+    </form>
   );
 }

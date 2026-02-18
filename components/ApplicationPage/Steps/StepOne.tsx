@@ -1,63 +1,62 @@
 "use client";
 
-import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/redux/store";
 import { registerUser } from "@/redux/features/authSlice";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
 
 interface Props {
   nextStep: () => void;
   prevStep: () => void;
 }
 
-export default function StepOne({ nextStep, prevStep }: Props) {
+interface FormValues {
+  phone: string;
+  password: string;
+  confirmPassword: string;
+}
+
+export default function StepOne({ nextStep }: Props) {
   const dispatch = useDispatch<AppDispatch>();
 
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting, isValid },
+  } = useForm<FormValues>({
+    mode: "onChange", // enables real-time validation
+  });
 
-  const handleNext = async () => {
-    // Basic validation
-    if (!phone || password !== confirmPassword) {
-      toast.error("Passwords do not match or phone is empty");
-      return;
-    }
+  const password = watch("password");
 
-    setLoading(true);
-
+  const onSubmit = async (data: FormValues) => {
     try {
-      const result = await dispatch(registerUser({ phone, password }));
+      const result = await dispatch(
+        registerUser({
+          phone: data.phone,
+          password: data.password,
+        }),
+      );
 
-      // ----------------------
-      // SUCCESS CASE
-      // ----------------------
       if (registerUser.fulfilled.match(result)) {
-        const message = result.payload.detail || "Account created successfully";
+        const message =
+          result.payload?.detail || "Account created successfully";
         toast.success(message);
 
-        // Redirect to next step after short delay to let user see the toast
         setTimeout(() => nextStep(), 500);
-
-        // ----------------------
-        // ERROR CASE
-        // ----------------------
       } else if (registerUser.rejected.match(result)) {
-        // result.payload is the custom rejected payload (string from rejectWithValue)
-        // result.error.message is fallback error from createAsyncThunk
         const errorMessage =
           typeof result.payload === "string"
             ? result.payload
             : result.error?.message || "Registration failed";
+
         toast.error(errorMessage);
       }
     } catch (err: any) {
       toast.error(err.message || "Something went wrong");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -72,7 +71,7 @@ export default function StepOne({ nextStep, prevStep }: Props) {
       </p>
 
       {/* Form */}
-      <div className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Phone */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -81,10 +80,18 @@ export default function StepOne({ nextStep, prevStep }: Props) {
           <input
             type="text"
             placeholder="0700 000 000"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full rounded-lg text-black border border-gray-200  px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            {...register("phone", {
+              required: "Phone number is required",
+              minLength: {
+                value: 10,
+                message: "Phone number must be at least 10 digits",
+              },
+            })}
+            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
+          {errors.phone && (
+            <p className="text-sm text-red-500 mt-2">{errors.phone.message}</p>
+          )}
           <p className="text-sm text-gray-500 mt-2">
             This will be your username
           </p>
@@ -98,10 +105,23 @@ export default function StepOne({ nextStep, prevStep }: Props) {
           <input
             type="password"
             placeholder="Enter password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            {...register("password", {
+              required: "Password is required",
+              minLength: {
+                value: 6,
+                message: "Password must be more than 6 characters",
+              },
+            })}
             className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
+          {errors.password && (
+            <p className="text-sm text-red-500 mt-2">
+              {errors.password.message}
+            </p>
+          )}
+          <span className="text-xs text-gray-500">
+            Password should be more than 6 characters
+          </span>
         </div>
 
         {/* Confirm Password */}
@@ -112,40 +132,43 @@ export default function StepOne({ nextStep, prevStep }: Props) {
           <input
             type="password"
             placeholder="Re-enter password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            {...register("confirmPassword", {
+              required: "Please confirm your password",
+              validate: (value) =>
+                value === password || "Passwords do not match",
+            })}
             className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
+          {errors.confirmPassword && (
+            <p className="text-sm text-red-500 mt-2">
+              {errors.confirmPassword.message}
+            </p>
+          )}
         </div>
-      </div>
 
-      {/* Buttons */}
-      <div className="flex justify-between items-center mt-10">
-        {/* <button
-          onClick={prevStep}
-          className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
-        >
-          ← Previous
-        </button> */}
-        <Link href="/" className="border border-gray-300 px-6 py-2 rounded-lg">
-          Back
-        </Link>
+        {/* Buttons */}
+        <div className="flex justify-between items-center mt-10">
+          <Link
+            href="/"
+            className="border border-gray-300 text-black px-6 py-2 rounded-lg"
+          >
+            Back
+          </Link>
 
-        <button
-          onClick={handleNext}
-          disabled={
-            !phone || !password || password !== confirmPassword || loading
-          }
-          className={`px-6 py-2 rounded-lg text-white transition flex items-center gap-2
-            ${
-              phone && password && password === confirmPassword
-                ? "bg-blue-900 hover:bg-blue-800"
-                : "bg-gray-300 cursor-not-allowed"
-            }`}
-        >
-          {loading ? "Registering..." : "Next →"}
-        </button>
-      </div>
+          <button
+            type="submit"
+            disabled={!isValid || isSubmitting}
+            className={`px-6 py-2 rounded-lg text-white transition flex items-center gap-2
+              ${
+                isValid && !isSubmitting
+                  ? "bg-blue-900 hover:bg-blue-800"
+                  : "bg-gray-300 cursor-not-allowed"
+              }`}
+          >
+            {isSubmitting ? "Registering..." : "Next →"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

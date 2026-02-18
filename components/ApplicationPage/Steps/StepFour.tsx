@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useForm, Controller } from "react-hook-form";
 import { AppDispatch, RootState } from "@/redux/store";
 import { submitGuardianDetails } from "@/redux/features/applicationSlice";
 import toast from "react-hot-toast";
@@ -9,6 +10,17 @@ import toast from "react-hot-toast";
 interface Props {
   nextStep: () => void;
   prevStep: () => void;
+}
+
+interface FormValues {
+  parentName: string;
+  parentId: string;
+  parentPhone: string;
+  yearOfBirth: string;
+  relationship: string;
+  idFront: FileList | null;
+  idBack: FileList | null;
+  guardianPhoto: FileList | null;
 }
 
 export default function StepFour({ nextStep, prevStep }: Props) {
@@ -22,127 +34,105 @@ export default function StepFour({ nextStep, prevStep }: Props) {
     guardianPhoto: reduxGuardianPhoto,
   } = useSelector((state: RootState) => state.application);
 
-  const [form, setForm] = useState({
-    parentName: "",
-    parentId: "",
-    parentPhone: "",
-    yearOfBirth: "",
-    relationship: "",
-    idFront: null as File | null,
-    idBack: null as File | null,
-    guardianPhoto: null as File | null,
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<FormValues>({
+    defaultValues: {
+      parentName: "",
+      parentId: "",
+      parentPhone: "",
+      yearOfBirth: "",
+      relationship: "",
+      idFront: null,
+      idBack: null,
+      guardianPhoto: null,
+    },
   });
 
-  // Previews for local files
+  const idFrontFiles = watch("idFront");
+  const idBackFiles = watch("idBack");
+  const guardianPhotoFiles = watch("guardianPhoto");
+
   const [frontPreview, setFrontPreview] = useState<string | null>(null);
   const [backPreview, setBackPreview] = useState<string | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(
+    reduxGuardianPhoto || null,
+  );
 
-  // 🔥 Hydrate form fields from Redux when going back
+  // Hydrate form from Redux when going back
   useEffect(() => {
-    setForm((prev) => ({
-      ...prev,
-      parentName: parentName || "",
-      parentId: parentId || "",
-      parentPhone: parentPhone || "",
-      relationship: relationship || "",
-    }));
+    setValue("parentName", parentName || "");
+    setValue("parentId", parentId || "");
+    setValue("parentPhone", parentPhone || "");
+    setValue("relationship", relationship || "");
+    if (reduxGuardianPhoto) setPhotoPreview(reduxGuardianPhoto);
+  }, [
+    parentName,
+    parentId,
+    parentPhone,
+    relationship,
+    reduxGuardianPhoto,
+    setValue,
+  ]);
 
-    // Hydrate guardian photo preview from Redux if available
-    if (reduxGuardianPhoto) {
-      setPhotoPreview(reduxGuardianPhoto);
-    }
-  }, [parentName, parentId, parentPhone, relationship, reduxGuardianPhoto]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    field: "idFront" | "idBack",
-  ) => {
-    if (e.target.files?.[0]) {
-      const file = e.target.files[0];
-      setForm({ ...form, [field]: file });
-
-      const objectUrl = URL.createObjectURL(file);
-      field === "idFront"
-        ? setFrontPreview(objectUrl)
-        : setBackPreview(objectUrl);
-    }
-  };
-
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) {
-      const file = e.target.files[0];
-      setForm({ ...form, guardianPhoto: file });
-
-      // Revoke previous preview if exists
+  // Generate previews when files change
+  useEffect(() => {
+    if (idFrontFiles?.[0])
+      setFrontPreview(URL.createObjectURL(idFrontFiles[0]));
+    if (idBackFiles?.[0]) setBackPreview(URL.createObjectURL(idBackFiles[0]));
+    if (guardianPhotoFiles?.[0]) {
       photoPreview && URL.revokeObjectURL(photoPreview);
-
-      const objectUrl = URL.createObjectURL(file);
-      setPhotoPreview(objectUrl);
+      setPhotoPreview(URL.createObjectURL(guardianPhotoFiles[0]));
     }
-  };
 
-  const handleNext = async () => {
+    return () => {
+      idFrontFiles?.[0] && URL.revokeObjectURL(frontPreview || "");
+      idBackFiles?.[0] && URL.revokeObjectURL(backPreview || "");
+      guardianPhotoFiles?.[0] && URL.revokeObjectURL(photoPreview || "");
+    };
+  }, [idFrontFiles, idBackFiles, guardianPhotoFiles]);
+
+  const onSubmit = async (data: FormValues) => {
     const formData = new FormData();
-    formData.append("guardian_full_name", form.parentName);
-    formData.append("guardian_id_number", form.parentId);
-    formData.append("guardian_phone", form.parentPhone);
-    formData.append("guardian_year_of_birth", form.yearOfBirth);
-    formData.append("guardian_relationship", form.relationship);
-
-    if (form.idFront) formData.append("guardian_id_front", form.idFront);
-    if (form.idBack) formData.append("guardian_id_back", form.idBack);
-    if (form.guardianPhoto)
-      formData.append("guardian_photo", form.guardianPhoto);
+    formData.append("guardian_full_name", data.parentName);
+    formData.append("guardian_id_number", data.parentId);
+    formData.append("guardian_phone", data.parentPhone);
+    formData.append("guardian_year_of_birth", data.yearOfBirth);
+    formData.append("guardian_relationship", data.relationship);
+    if (data.idFront?.[0])
+      formData.append("guardian_id_front", data.idFront[0]);
+    if (data.idBack?.[0]) formData.append("guardian_id_back", data.idBack[0]);
+    if (data.guardianPhoto?.[0])
+      formData.append("guardian_photo", data.guardianPhoto[0]);
 
     const result = await dispatch(submitGuardianDetails(formData));
 
     if (submitGuardianDetails.fulfilled.match(result)) {
       toast.success("Guardian details saved successfully!");
-
-      // Update preview to actual URL returned by backend
       const uploadedPhotoUrl = result.payload.guardian_photo;
-      if (uploadedPhotoUrl) {
-        setPhotoPreview(uploadedPhotoUrl); // persists even on refresh
-      }
-
+      if (uploadedPhotoUrl) setPhotoPreview(uploadedPhotoUrl);
       nextStep();
     } else {
       toast.error("Failed to save guardian details. Please try again.");
     }
   };
 
-  // Cleanup object URLs on unmount or when previews change
-  useEffect(() => {
-    return () => {
-      frontPreview && URL.revokeObjectURL(frontPreview);
-      backPreview && URL.revokeObjectURL(backPreview);
-      // Only revoke if it's a local file (not backend URL)
-      if (photoPreview && form.guardianPhoto) {
-        URL.revokeObjectURL(photoPreview);
-      }
-    };
-  }, [frontPreview, backPreview, photoPreview, form.guardianPhoto]);
-
-  const renderFileLabel = (file: File | null) =>
-    file ? (
-      <span className="text-gray-900 text-sm">{file.name}</span>
+  const renderFileLabel = (fileList: FileList | null) =>
+    fileList?.[0] ? (
+      <span className="text-gray-900 text-sm">{fileList[0].name}</span>
     ) : (
       <span className="text-gray-500 text-sm text-center">
-        Click to upload or drag and drop
-        <br />
-        PDF, JPG, PNG (Max 5MB)
+        Click to upload or drag and drop <br /> PDF, JPG, PNG (Max 5MB)
       </span>
     );
 
   return (
-    <div>
+    <form onSubmit={handleSubmit(onSubmit)}>
       <h2 className="text-xl font-semibold text-gray-900">
         Parent/Guardian Details
       </h2>
@@ -151,39 +141,40 @@ export default function StepFour({ nextStep, prevStep }: Props) {
       </p>
 
       <div className="space-y-6">
-        {/* Guardian Photo Upload */}
+        {/* Guardian Photo */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
             Parent/Guardian Photo
           </label>
-
-          <div
-            className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition"
-            onClick={() =>
-              document.getElementById("guardianPhotoInput")?.click()
-            }
-          >
-            {form.guardianPhoto ? (
-              <span className="text-gray-900 text-sm">
-                {form.guardianPhoto.name}
-              </span>
-            ) : (
-              <span className="text-gray-500 text-sm text-center">
-                Click to upload guardian photo
-                <br />
-                JPG, PNG (Max 5MB)
-              </span>
+          <Controller
+            name="guardianPhoto"
+            control={control}
+            rules={{ required: "Guardian photo is required" }}
+            render={({ field }) => (
+              <div
+                className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition"
+                onClick={() =>
+                  document.getElementById("guardianPhotoInput")?.click()
+                }
+              >
+                {renderFileLabel(field.value)}
+              </div>
             )}
-          </div>
-
+          />
           <input
             type="file"
             id="guardianPhotoInput"
             className="hidden"
-            onChange={handlePhotoChange}
+            {...register("guardianPhoto", {
+              required: "Guardian photo is required",
+            })}
             accept=".jpg,.jpeg,.png"
           />
-
+          {errors.guardianPhoto && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.guardianPhoto.message}
+            </p>
+          )}
           {photoPreview && (
             <div className="mt-3">
               <img
@@ -201,12 +192,15 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             Full Name
           </label>
           <input
-            name="parentName"
-            value={form.parentName}
-            onChange={handleChange}
+            {...register("parentName", { required: "Full Name is required" })}
             placeholder="Enter parent/guardian full name"
             className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
+          {errors.parentName && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.parentName.message}
+            </p>
+          )}
         </div>
 
         {/* ID Number */}
@@ -215,12 +209,15 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             ID Number
           </label>
           <input
-            name="parentId"
-            value={form.parentId}
-            onChange={handleChange}
+            {...register("parentId", { required: "ID Number is required" })}
             placeholder="Enter ID number"
             className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
+          {errors.parentId && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.parentId.message}
+            </p>
+          )}
         </div>
 
         {/* Phone */}
@@ -229,12 +226,17 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             Phone Number
           </label>
           <input
-            name="parentPhone"
-            value={form.parentPhone}
-            onChange={handleChange}
+            {...register("parentPhone", {
+              required: "Phone number is required",
+            })}
             placeholder="0700 000 000"
             className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
+          {errors.parentPhone && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.parentPhone.message}
+            </p>
+          )}
         </div>
 
         {/* Year of Birth */}
@@ -243,12 +245,21 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             Year of Birth
           </label>
           <input
-            name="yearOfBirth"
-            value={form.yearOfBirth}
-            onChange={handleChange}
+            {...register("yearOfBirth", {
+              required: "Year of birth is required",
+              pattern: {
+                value: /^\d{4}$/,
+                message: "Enter a valid 4-digit year",
+              },
+            })}
             placeholder="YYYY"
             className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           />
+          {errors.yearOfBirth && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.yearOfBirth.message}
+            </p>
+          )}
         </div>
 
         {/* Relationship */}
@@ -257,9 +268,9 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             Relationship
           </label>
           <select
-            name="relationship"
-            value={form.relationship}
-            onChange={handleChange}
+            {...register("relationship", {
+              required: "Relationship is required",
+            })}
             className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
           >
             <option value="">Select relationship</option>
@@ -267,6 +278,11 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             <option value="mother">Mother</option>
             <option value="guardian">Guardian</option>
           </select>
+          {errors.relationship && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.relationship.message}
+            </p>
+          )}
         </div>
 
         {/* ID Uploads */}
@@ -276,19 +292,24 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               ID Front
             </label>
-            <div
-              className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition"
-              onClick={() => document.getElementById("idFrontInput")?.click()}
-            >
-              {renderFileLabel(form.idFront)}
-            </div>
             <input
               type="file"
               id="idFrontInput"
               className="hidden"
-              onChange={(e) => handleFileChange(e, "idFront")}
+              {...register("idFront", { required: "Front ID is required" })}
               accept=".pdf,.jpg,.jpeg,.png"
             />
+            <div
+              className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition"
+              onClick={() => document.getElementById("idFrontInput")?.click()}
+            >
+              {renderFileLabel(idFrontFiles)}
+            </div>
+            {errors.idFront && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.idFront.message}
+              </p>
+            )}
             {frontPreview && (
               <p className="mt-2 text-blue-700 text-sm underline">
                 <a
@@ -307,19 +328,24 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               ID Back
             </label>
-            <div
-              className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition"
-              onClick={() => document.getElementById("idBackInput")?.click()}
-            >
-              {renderFileLabel(form.idBack)}
-            </div>
             <input
               type="file"
               id="idBackInput"
               className="hidden"
-              onChange={(e) => handleFileChange(e, "idBack")}
+              {...register("idBack", { required: "Back ID is required" })}
               accept=".pdf,.jpg,.jpeg,.png"
             />
+            <div
+              className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition"
+              onClick={() => document.getElementById("idBackInput")?.click()}
+            >
+              {renderFileLabel(idBackFiles)}
+            </div>
+            {errors.idBack && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.idBack.message}
+              </p>
+            )}
             {backPreview && (
               <p className="mt-2 text-blue-700 text-sm underline">
                 <a href={backPreview} target="_blank" rel="noopener noreferrer">
@@ -334,20 +360,20 @@ export default function StepFour({ nextStep, prevStep }: Props) {
       {/* Buttons */}
       <div className="flex justify-between items-center mt-10">
         <button
+          type="button"
           onClick={prevStep}
           className="px-5 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100 transition"
         >
           ← Previous
         </button>
-
         <button
-          onClick={handleNext}
+          type="submit"
           disabled={loading}
           className="px-6 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg transition flex items-center gap-2 disabled:opacity-50"
         >
           {loading ? "Saving details..." : "Next →"}
         </button>
       </div>
-    </div>
+    </form>
   );
 }
