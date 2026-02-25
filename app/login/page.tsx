@@ -7,6 +7,8 @@ import { useForm } from "react-hook-form";
 import { AppDispatch, RootState } from "@/redux/store";
 import { loginUser } from "@/redux/features/authSlice";
 import toast from "react-hot-toast";
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 interface LoginFormValues {
   phone: string;
@@ -18,12 +20,14 @@ export default function TrackApplicationLoginPage() {
   const router = useRouter();
   const { loading } = useSelector((state: RootState) => state.auth);
 
+  const [showPassword, setShowPassword] = useState(false);
+
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<LoginFormValues>({
-    mode: "onBlur", // validates when user leaves input
+    mode: "onBlur",
   });
 
   const onSubmit = async (data: LoginFormValues) => {
@@ -50,7 +54,6 @@ export default function TrackApplicationLoginPage() {
   return (
     <main className="min-h-screen bg-white px-4 py-15">
       <div className="mx-auto flex w-full max-w-3xl flex-col items-center">
-        {/* Header */}
         <h1 className="text-center text-2xl font-semibold tracking-tight text-[#1f3a8a] sm:text-3xl">
           Track Your Application
         </h1>
@@ -58,7 +61,6 @@ export default function TrackApplicationLoginPage() {
           Log in to view your application status
         </p>
 
-        {/* Card */}
         <div className="mt-10 w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
           <h2 className="text-lg font-semibold text-slate-900">Login</h2>
           <p className="mt-1 text-sm text-slate-500">
@@ -109,14 +111,14 @@ export default function TrackApplicationLoginPage() {
                 Password
               </label>
 
-              <div className="mt-2 flex items-center gap-2 rounded-xl bg-[#eef4ff] px-3 py-3">
+              <div className="relative mt-2 flex items-center gap-2 rounded-xl bg-[#eef4ff] px-3 py-3">
                 <LockIcon />
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   autoComplete="current-password"
-                  className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
+                  className="w-full bg-transparent pr-10 text-sm text-slate-900 placeholder:text-slate-400 outline-none"
                   {...register("password", {
                     required: "Password is required",
                     minLength: {
@@ -125,6 +127,14 @@ export default function TrackApplicationLoginPage() {
                     },
                   })}
                 />
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-900"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
               </div>
 
               {errors.password && (
@@ -134,7 +144,7 @@ export default function TrackApplicationLoginPage() {
               )}
             </div>
 
-            {/* Submit Button */}
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}

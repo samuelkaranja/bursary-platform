@@ -70,24 +70,16 @@ export default function StepTwo({ nextStep }: Props) {
           </div>
         </div>
 
-        {/* University */}
-        <div
-          onClick={() => setSelected("university")}
-          className={`cursor-pointer rounded-xl border p-6 transition-all
-            ${
-              selected === "university"
-                ? "border-blue-900 bg-blue-50 shadow-sm"
-                : "border-gray-200 hover:border-blue-400"
-            }`}
-        >
+        {/* University (Disabled) */}
+        <div className="rounded-xl border p-6 transition-all border-gray-200 bg-gray-100 opacity-60 cursor-not-allowed">
           <div className="flex flex-col items-start space-y-3">
-            <div className="text-blue-900 text-3xl">🎓</div>
+            <div className="text-gray-400 text-3xl">🎓</div>
 
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-gray-500">
                 University/College
               </h3>
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-400 mt-1">
                 For students in tertiary institutions
               </p>
             </div>

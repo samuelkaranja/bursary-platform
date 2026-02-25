@@ -6,6 +6,8 @@ import { registerUser } from "@/redux/features/authSlice";
 import toast from "react-hot-toast";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
+import { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 interface Props {
   nextStep: () => void;
@@ -21,13 +23,16 @@ interface FormValues {
 export default function StepOne({ nextStep }: Props) {
   const dispatch = useDispatch<AppDispatch>();
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting, isValid },
   } = useForm<FormValues>({
-    mode: "onChange", // enables real-time validation
+    mode: "onChange",
   });
 
   const password = watch("password");
@@ -62,7 +67,6 @@ export default function StepOne({ nextStep }: Props) {
 
   return (
     <div>
-      {/* Title */}
       <h2 className="text-xl font-semibold text-gray-900">
         Create Your Account
       </h2>
@@ -70,7 +74,6 @@ export default function StepOne({ nextStep }: Props) {
         Set up your login credentials to track your application
       </p>
 
-      {/* Form */}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {/* Phone */}
         <div>
@@ -102,26 +105,28 @@ export default function StepOne({ nextStep }: Props) {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Password
           </label>
-          <input
-            type="password"
-            placeholder="Enter password"
-            {...register("password", {
-              required: "Password is required",
-              minLength: {
-                value: 6,
-                message: "Password must be more than 6 characters",
-              },
-            })}
-            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter password"
+              {...register("password", {
+                required: "Password is required",
+              })}
+              className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
           {errors.password && (
             <p className="text-sm text-red-500 mt-2">
               {errors.password.message}
             </p>
           )}
-          <span className="text-xs text-gray-500">
-            Password should be more than 6 characters
-          </span>
         </div>
 
         {/* Confirm Password */}
@@ -129,16 +134,25 @@ export default function StepOne({ nextStep }: Props) {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Confirm Password
           </label>
-          <input
-            type="password"
-            placeholder="Re-enter password"
-            {...register("confirmPassword", {
-              required: "Please confirm your password",
-              validate: (value) =>
-                value === password || "Passwords do not match",
-            })}
-            className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-900"
-          />
+          <div className="relative">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Re-enter password"
+              {...register("confirmPassword", {
+                required: "Please confirm your password",
+                validate: (value) =>
+                  value === password || "Passwords do not match",
+              })}
+              className="w-full rounded-lg text-black border border-gray-200 px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-900"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((prev) => !prev)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900"
+            >
+              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
           {errors.confirmPassword && (
             <p className="text-sm text-red-500 mt-2">
               {errors.confirmPassword.message}
