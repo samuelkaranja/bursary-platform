@@ -121,10 +121,6 @@ export default function TrackApplicationLoginPage() {
                   className="w-full bg-transparent pr-10 text-sm text-slate-900 placeholder:text-slate-400 outline-none"
                   {...register("password", {
                     required: "Password is required",
-                    minLength: {
-                      value: 6,
-                      message: "Password must be at least 6 characters",
-                    },
                   })}
                 />
 
