@@ -3,7 +3,7 @@ import { RootState } from "../store";
 import { apiFetch } from "../api";
 
 export type AdminApplicationItem = {
-  id: number;
+  id: string; // backend stores ID as string
   applicant_name: string;
   school: string;
   level: "secondary" | "university";
@@ -27,15 +27,15 @@ export type AdminApplicationsResponse = {
 };
 
 export type AdminApplicationsQuery = {
-  page: number; // 1-based
-  page_size: number; // set 15
+  page: number;
+  page_size: number;
   q?: string;
   status?: string;
   level?: string;
   school?: string;
-  date_from?: string; // ISO 8601
-  date_to?: string; // ISO 8601
-  sort_by?: string; // "submitted_at"
+  date_from?: string;
+  date_to?: string;
+  sort_by?: string;
   sort_dir?: "asc" | "desc";
 };
 
@@ -45,6 +45,7 @@ type State = {
   loading: boolean;
   error: string | null;
   exporting: boolean;
+  deleting: boolean;
 };
 
 const initialState: State = {
@@ -58,6 +59,7 @@ const initialState: State = {
   loading: false,
   error: null,
   exporting: false,
+  deleting: false,
 };
 
 function toQueryString(q: AdminApplicationsQuery) {
@@ -69,14 +71,15 @@ function toQueryString(q: AdminApplicationsQuery) {
   return p.toString();
 }
 
+/* =========================
+   FETCH APPLICATIONS
+========================= */
 export const fetchAdminApplications = createAsyncThunk(
   "adminApplications/fetch",
   async (_, { getState, rejectWithValue }) => {
     const state = getState() as RootState;
     const token = state.auth.accessToken;
-    const role = String(state.auth.role ?? "")
-      .toLowerCase()
-      .trim();
+    const role = String(state.auth.role ?? "").toLowerCase().trim();
 
     if (role !== "admin") return rejectWithValue("Forbidden: admin only");
     if (!token) return rejectWithValue("Missing token");
@@ -87,24 +90,46 @@ export const fetchAdminApplications = createAsyncThunk(
     } catch (err: any) {
       return rejectWithValue(err.message);
     }
-  },
+  }
 );
 
-// Export CSV as blob (don’t use apiFetch because it always parses JSON)
+/* =========================
+   DELETE APPLICATION
+========================= */
+export const deleteAdminApplication = createAsyncThunk(
+  "adminApplications/delete",
+  async (id: number, { getState, rejectWithValue }) => {
+    const state = getState() as RootState;
+    const token = state.auth.accessToken;
+    const role = String(state.auth.role ?? "").toLowerCase().trim();
+
+    if (role !== "admin") return rejectWithValue("Forbidden: admin only");
+    if (!token) return rejectWithValue("Missing token");
+
+    try {
+      // ✅ Use apiFetch instead of fetch
+      await apiFetch(`/admin/applications/${id.toString()}`, { method: "DELETE" }, token);
+      return id;
+    } catch (err: any) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+/* =========================
+   EXPORT CSV
+========================= */
 export const exportApprovedCsv = createAsyncThunk(
   "adminApplications/exportApprovedCsv",
   async (_, { getState, rejectWithValue }) => {
     const state = getState() as RootState;
     const token = state.auth.accessToken;
-    const role = String(state.auth.role ?? "")
-      .toLowerCase()
-      .trim();
+    const role = String(state.auth.role ?? "").toLowerCase().trim();
 
     if (role !== "admin") return rejectWithValue("Forbidden: admin only");
     if (!token) return rejectWithValue("Missing token");
 
-    const { q, level, school, date_from, date_to, sort_dir } =
-      state.adminApplications.query;
+    const { q, level, school, date_from, date_to, sort_dir } = state.adminApplications.query;
 
     const params = new URLSearchParams();
     if (q) params.set("q", q);
@@ -114,46 +139,20 @@ export const exportApprovedCsv = createAsyncThunk(
     if (date_to) params.set("date_to", date_to);
     if (sort_dir) params.set("sort_dir", sort_dir);
 
-    const url = `https://api.kandarabursary.com/api/v1/admin/applications/export-approved.csv?${params.toString()}`;
+    const url = `/admin/applications/export-approved.csv?${params.toString()}`;
 
     try {
-      const res = await fetch(url, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        // backend likely returns JSON error; try parse, fallback to text
-        let msg = "Failed to export CSV";
-        try {
-          const j = await res.json();
-          msg = j?.detail ?? msg;
-        } catch {
-          const t = await res.text();
-          if (t) msg = t;
-        }
-        throw new Error(msg);
-      }
-
-      const blob = await res.blob();
-
-      // Convert blob to a serializable data URL (base64 string)
-      const dataUrl: string = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(blob);
-      });
-
-      return dataUrl;
+      const blob = await apiFetch(url, { method: "GET" }, token);
+      return blob;
     } catch (err: any) {
       return rejectWithValue(err.message);
     }
-  },
+  }
 );
 
+/* =========================
+   SLICE
+========================= */
 const slice = createSlice({
   name: "adminApplications",
   initialState,
@@ -169,9 +168,11 @@ const slice = createSlice({
       state.loading = false;
       state.error = null;
       state.exporting = false;
+      state.deleting = false;
     },
   },
   extraReducers: (b) => {
+    /* FETCH */
     b.addCase(fetchAdminApplications.pending, (s) => {
       s.loading = true;
       s.error = null;
@@ -185,6 +186,25 @@ const slice = createSlice({
       s.error = a.payload ?? "Failed to load applications";
     });
 
+    /* DELETE */
+    b.addCase(deleteAdminApplication.pending, (s) => {
+      s.deleting = true;
+    });
+    b.addCase(deleteAdminApplication.fulfilled, (s, a) => {
+      s.deleting = false;
+      if (s.data) {
+        s.data.items = s.data.items.filter((item) => item.id !== a.payload.toString());
+        if (s.data.items.length === 0 && s.query.page > 1) {
+          s.query.page -= 1;
+        }
+      }
+    });
+    b.addCase(deleteAdminApplication.rejected, (s, a: any) => {
+      s.deleting = false;
+      s.error = a.payload ?? "Failed to delete application";
+    });
+
+    /* EXPORT */
     b.addCase(exportApprovedCsv.pending, (s) => {
       s.exporting = true;
       s.error = null;

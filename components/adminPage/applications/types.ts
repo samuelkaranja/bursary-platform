@@ -8,7 +8,7 @@ export type Status =
 export type Level = "Secondary" | "University";
 
 export type ApplicationRow = {
-  id: string;
+  id: number;
   applicantName: string;
   school: string;
   level: Level;
