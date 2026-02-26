@@ -79,7 +79,9 @@ export const fetchAdminApplications = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     const state = getState() as RootState;
     const token = state.auth.accessToken;
-    const role = String(state.auth.role ?? "").toLowerCase().trim();
+    const role = String(state.auth.role ?? "")
+      .toLowerCase()
+      .trim();
 
     if (role !== "admin") return rejectWithValue("Forbidden: admin only");
     if (!token) return rejectWithValue("Missing token");
@@ -90,7 +92,7 @@ export const fetchAdminApplications = createAsyncThunk(
     } catch (err: any) {
       return rejectWithValue(err.message);
     }
-  }
+  },
 );
 
 /* =========================
@@ -98,22 +100,24 @@ export const fetchAdminApplications = createAsyncThunk(
 ========================= */
 export const deleteAdminApplication = createAsyncThunk(
   "adminApplications/delete",
-  async (id: number, { getState, rejectWithValue }) => {
+  async (id: string, { getState, rejectWithValue }) => {
     const state = getState() as RootState;
     const token = state.auth.accessToken;
-    const role = String(state.auth.role ?? "").toLowerCase().trim();
+    const role = String(state.auth.role ?? "")
+      .toLowerCase()
+      .trim();
 
     if (role !== "admin") return rejectWithValue("Forbidden: admin only");
     if (!token) return rejectWithValue("Missing token");
 
     try {
       // ✅ Use apiFetch instead of fetch
-      await apiFetch(`/admin/applications/${id.toString()}`, { method: "DELETE" }, token);
+      await apiFetch(`/admin/applications/${id}`, { method: "DELETE" }, token);
       return id;
     } catch (err: any) {
       return rejectWithValue(err.message);
     }
-  }
+  },
 );
 
 /* =========================
@@ -124,12 +128,15 @@ export const exportApprovedCsv = createAsyncThunk(
   async (_, { getState, rejectWithValue }) => {
     const state = getState() as RootState;
     const token = state.auth.accessToken;
-    const role = String(state.auth.role ?? "").toLowerCase().trim();
+    const role = String(state.auth.role ?? "")
+      .toLowerCase()
+      .trim();
 
     if (role !== "admin") return rejectWithValue("Forbidden: admin only");
     if (!token) return rejectWithValue("Missing token");
 
-    const { q, level, school, date_from, date_to, sort_dir } = state.adminApplications.query;
+    const { q, level, school, date_from, date_to, sort_dir } =
+      state.adminApplications.query;
 
     const params = new URLSearchParams();
     if (q) params.set("q", q);
@@ -147,7 +154,7 @@ export const exportApprovedCsv = createAsyncThunk(
     } catch (err: any) {
       return rejectWithValue(err.message);
     }
-  }
+  },
 );
 
 /* =========================
@@ -193,7 +200,9 @@ const slice = createSlice({
     b.addCase(deleteAdminApplication.fulfilled, (s, a) => {
       s.deleting = false;
       if (s.data) {
-        s.data.items = s.data.items.filter((item) => item.id !== a.payload.toString());
+        s.data.items = s.data.items.filter(
+          (item) => item.id !== a.payload.toString(),
+        );
         if (s.data.items.length === 0 && s.query.page > 1) {
           s.query.page -= 1;
         }

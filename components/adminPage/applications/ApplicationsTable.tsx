@@ -14,7 +14,7 @@ export function ApplicationsTable({ rows }: { rows: ApplicationRow[] }) {
 
   const [showModal, setShowModal] = useState(false);
   const [selectedApp, setSelectedApp] = useState<{
-    id: number;
+    id: string; // ✅ string now
     name: string;
     school?: string;
   } | null>(null);
@@ -97,7 +97,6 @@ export function ApplicationsTable({ rows }: { rows: ApplicationRow[] }) {
 
                   <td className="px-4 py-3 text-right">
                     <div className="flex justify-end gap-2">
-                      {/* View Button */}
                       <a
                         href={`/admin/applications/${row.id}`}
                         className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
@@ -106,7 +105,6 @@ export function ApplicationsTable({ rows }: { rows: ApplicationRow[] }) {
                         View
                       </a>
 
-                      {/* Delete Button */}
                       <button
                         onClick={() => handleDeleteClick(row)}
                         className="inline-flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-100"
