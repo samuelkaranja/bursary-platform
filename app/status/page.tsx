@@ -64,6 +64,8 @@ export default function StatusPage() {
     return s;
   }, [status]);
 
+  const canEdit = ["draft", "submitted"].includes(normalizedStatus);
+
   const handleLogout = () => {
     dispatch(logout());
     dispatch(clearApplication());
@@ -74,6 +76,19 @@ export default function StatusPage() {
   const docs = documents ?? [];
 
   const [previewMap, setPreviewMap] = useState<Record<string, string>>({});
+
+  // ✅ Clear old image previews whenever documents change
+  useEffect(() => {
+    setPreviewMap({});
+  }, [docs]);
+
+  function docVersion(doc: any) {
+    return doc?.created_at || doc?.filename || doc?.size_bytes || "";
+  }
+
+  function previewKey(doc: any) {
+    return `${doc?.doc_type}:${docVersion(doc)}`;
+  }
 
   useEffect(() => {
     if (!token) return;
@@ -89,14 +104,22 @@ export default function StatusPage() {
 
       const results = await Promise.all(
         imageDocs.map(async (doc: any) => {
-          const key = doc.doc_type || doc.filename || doc.url;
+          const key = previewKey(doc);
 
           // already loaded
           if (previewMap[key]) return null;
 
           try {
-            const res = await fetch(doc.url, {
-              headers: { Authorization: `Bearer ${token}` },
+            const version = doc?.created_at || doc?.filename || Date.now();
+            const url = `${doc.url}?v=${encodeURIComponent(version)}`;
+
+            const res = await fetch(url, {
+              cache: "no-store",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Cache-Control": "no-cache",
+                Pragma: "no-cache",
+              },
             });
 
             if (!res.ok) return null;
@@ -231,6 +254,18 @@ export default function StatusPage() {
               <InfoCard
                 title="Student Details"
                 subtitle="Information provided by the applicant"
+                action={
+                  canEdit ? (
+                    <button
+                      onClick={() => router.push("/application/edit/student")}
+                      className="text-sm text-blue-700 underline hover:cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                  ) : (
+                    <span className="text-xs text-gray-400">Locked</span>
+                  )
+                }
                 items={[
                   { label: "Full Name", value: fullName || "-" },
                   { label: "Phone Number", value: phone || "-" },
@@ -239,7 +274,7 @@ export default function StatusPage() {
                     value: prettyEducationLevel(educationLevel),
                   },
                   { label: "Institution", value: institution || "-" },
-                  { label: "National ID", value: nationalId || "-" },
+                  // { label: "National ID", value: nationalId || "-" },
                   {
                     label: "Registration Number",
                     value: registrationNumber || "-",
@@ -252,6 +287,18 @@ export default function StatusPage() {
               <InfoCard
                 title="Parent/Guardian Details"
                 subtitle="Parent/guardian information on your application"
+                action={
+                  canEdit ? (
+                    <button
+                      onClick={() => router.push("/application/edit/guardian")}
+                      className="text-sm text-blue-700 underline hover:cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                  ) : (
+                    <span className="text-xs text-gray-400">Locked</span>
+                  )
+                }
                 items={[
                   { label: "Full Name", value: parentName || "-" },
                   { label: "National ID", value: parentId || "-" },
@@ -318,7 +365,7 @@ export default function StatusPage() {
                       doc.doc_type || `document_${idx + 1}`,
                     );
                     const isImage = doc.content_type?.startsWith("image/");
-                    const key = doc.doc_type || doc.filename || doc.url;
+                    const key = previewKey(doc);
 
                     if (isImage) {
                       const previewSrc = previewMap[key];
@@ -477,17 +524,22 @@ function InfoCard({
   subtitle,
   items,
   extra,
+  action,
 }: {
   title: string;
   subtitle: string;
   items: { label: string; value: string }[];
   extra?: React.ReactNode;
+  action?: React.ReactNode;
 }) {
   return (
     <div className="bg-white rounded-xl shadow p-6 space-y-4">
-      <div>
-        <h3 className="font-semibold text-black">{title}</h3>
-        <p className="text-gray-500 text-sm">{subtitle}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="font-semibold text-black">{title}</h3>
+          <p className="text-gray-500 text-sm">{subtitle}</p>
+        </div>
+        {action ? <div className="shrink-0">{action}</div> : null}
       </div>
 
       <div className="grid gap-4 text-sm">

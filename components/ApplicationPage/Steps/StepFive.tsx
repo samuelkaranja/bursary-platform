@@ -79,7 +79,11 @@ export default function StepFive({ prevStep }: Props) {
       toast.success("Application submitted successfully!");
       router.push("/success");
     } else {
-      toast.error("Submission failed. Please try again.");
+      const msg =
+        typeof result.payload === "string"
+          ? result.payload
+          : result.error?.message || "Submission failed.";
+      toast.error(msg);
     }
   };
 
@@ -140,10 +144,8 @@ export default function StepFive({ prevStep }: Props) {
             {applicationState.institution || "-"}
           </p>
           <p className="text-[14px] text-black pb-1">
-            <span className="text-black text-[15px] font-semibold">
-              ID Number:
-            </span>{" "}
-            {applicationState.nationalId || "-"}
+            <span className="text-black text-[15px] font-semibold">Grade:</span>{" "}
+            {applicationState.studentClassForm || "-"}
           </p>
           <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">
@@ -167,6 +169,12 @@ export default function StepFive({ prevStep }: Props) {
               ID Number:
             </span>{" "}
             {applicationState.parentId || "-"}
+          </p>
+          <p className="text-[14px] text-black pb-1">
+            <span className="text-black text-[15px] font-semibold">
+              Year of Birth:
+            </span>{" "}
+            {applicationState.guardianYearOfBirth || "-"}
           </p>
           <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">Phone:</span>{" "}

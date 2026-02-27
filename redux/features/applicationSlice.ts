@@ -103,62 +103,113 @@ export const createDraft = createAsyncThunk(
 
 export const submitStudentDetails = createAsyncThunk(
   "application/studentDetails",
-  async (formData: FormData, { getState }) => {
+  async (formData: FormData, { getState, rejectWithValue }) => {
     const state = getState() as RootState;
     const { accessToken } = state.auth;
     const { applicationId } = state.application;
 
-    const data = await apiFetch(
-      `/applications/${applicationId}/student-details`,
-      {
-        method: "PATCH",
-        body: formData,
-      },
-      accessToken!,
-    );
+    // ✅ Guard: token must exist
+    if (!accessToken) {
+      return rejectWithValue("You are not logged in. Please login again.");
+    }
 
-    return data;
+    // ✅ Guard: applicationId must exist
+    if (!applicationId) {
+      return rejectWithValue(
+        "Missing application id. Please reload the page and try again.",
+      );
+    }
+
+    try {
+      const data = await apiFetch(
+        `/applications/${applicationId}/student-details`,
+        {
+          method: "PATCH",
+          body: formData,
+        },
+        accessToken,
+      );
+
+      return data;
+    } catch (err: any) {
+      return rejectWithValue(err?.message || "Failed to save student details");
+    }
   },
 );
 
 export const submitGuardianDetails = createAsyncThunk(
   "application/guardianDetails",
-  async (formData: FormData, { getState }) => {
+  async (formData: FormData, { getState, rejectWithValue }) => {
     const state = getState() as RootState;
     const { accessToken } = state.auth;
     const { applicationId } = state.application;
 
-    const data = await apiFetch(
-      `/applications/${applicationId}/guardian-details`,
-      {
-        method: "PATCH",
-        body: formData,
-      },
-      accessToken!,
-    );
+    // ✅ Guard: token must exist
+    if (!accessToken) {
+      return rejectWithValue("You are not logged in. Please login again.");
+    }
 
-    return data;
+    // ✅ Guard: applicationId must exist (prevents /applications/null/...)
+    if (!applicationId) {
+      return rejectWithValue(
+        "Missing application id. Please reload the page and try again.",
+      );
+    }
+
+    try {
+      const data = await apiFetch(
+        `/applications/${applicationId}/guardian-details`,
+        {
+          method: "PATCH",
+          body: formData,
+        },
+        accessToken,
+      );
+
+      return data;
+    } catch (err: any) {
+      // Ensure we return a friendly message into action.payload
+      return rejectWithValue(err?.message || "Failed to save guardian details");
+    }
   },
 );
 
 export const submitApplication = createAsyncThunk(
   "application/submit",
-  async (_, { getState }) => {
+  async (_, { getState, rejectWithValue }) => {
     const state = getState() as RootState;
     const { accessToken } = state.auth;
     const { applicationId } = state.application;
 
+    // ✅ Guard: must be authenticated
+    if (!accessToken) {
+      return rejectWithValue("You are not logged in. Please login again.");
+    }
+
+    // ✅ Guard: application must be loaded
+    if (!applicationId) {
+      return rejectWithValue(
+        "Application not loaded. Please reload the page and try again.",
+      );
+    }
+
     const formData = new FormData();
     formData.append("declaration_accepted", "true");
 
-    return await apiFetch(
-      `/applications/${applicationId}/submit`,
-      {
-        method: "POST",
-        body: formData,
-      },
-      accessToken!,
-    );
+    try {
+      const data = await apiFetch(
+        `/applications/${applicationId}/submit`,
+        {
+          method: "POST",
+          body: formData,
+        },
+        accessToken,
+      );
+
+      return data;
+    } catch (err: any) {
+      return rejectWithValue(err?.message || "Failed to submit application.");
+    }
   },
 );
 
@@ -171,6 +222,7 @@ export const fetchMyApplication = createAsyncThunk(
     try {
       // /applications/me returns: { application, timeline, documents }
       const data = await apiFetch("/applications/me", {}, token!);
+      console.log(data);
       return data;
     } catch (error: any) {
       return rejectWithValue(error.message);
@@ -229,7 +281,10 @@ const applicationSlice = createSlice({
       })
       .addCase(submitStudentDetails.rejected, (state, action: any) => {
         state.loading = false;
-        state.error = action.error?.message ?? "Failed to save student details";
+        state.error =
+          action.payload ??
+          action.error?.message ??
+          "Failed to save student details";
       })
 
       // GUARDIAN DETAILS
@@ -253,7 +308,9 @@ const applicationSlice = createSlice({
       .addCase(submitGuardianDetails.rejected, (state, action: any) => {
         state.loading = false;
         state.error =
-          action.error?.message ?? "Failed to save guardian details";
+          action.payload ??
+          action.error?.message ??
+          "Failed to save guardian details";
       })
 
       // SUBMIT APPLICATION
@@ -268,7 +325,10 @@ const applicationSlice = createSlice({
       })
       .addCase(submitApplication.rejected, (state, action: any) => {
         state.loading = false;
-        state.error = action.error?.message ?? "Failed to submit application";
+        state.error =
+          action.payload ??
+          action.error?.message ??
+          "Failed to submit application";
       })
 
       // FETCH MY APPLICATION (IMPORTANT FIX)

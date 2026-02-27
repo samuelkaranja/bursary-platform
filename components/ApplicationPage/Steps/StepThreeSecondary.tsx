@@ -4,7 +4,10 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/redux/store";
-import { submitStudentDetails } from "@/redux/features/applicationSlice";
+import {
+  fetchMyApplication,
+  submitStudentDetails,
+} from "@/redux/features/applicationSlice";
 import toast from "react-hot-toast";
 
 interface Props {
@@ -29,7 +32,10 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
     institution,
     registrationNumber,
     studentClassForm,
+    documents,
   } = useSelector((state: RootState) => state.application);
+
+  const token = useSelector((state: RootState) => state.auth.accessToken);
 
   const {
     register,
@@ -40,6 +46,10 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
   } = useForm<FormValues>();
 
   const [previewURL, setPreviewURL] = useState<string | null>(null);
+
+  const [existingBirthCertPreview, setExistingBirthCertPreview] = useState<
+    string | null
+  >(null);
 
   const watchedFile = watch("birthCertificate");
 
@@ -52,6 +62,42 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
       classForm: studentClassForm || "",
     });
   }, [fullName, institution, registrationNumber, studentClassForm, reset]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    const birthDoc = (documents ?? []).find(
+      (d) => d.doc_type === "birth_certificate",
+    );
+    if (!birthDoc?.url) {
+      setExistingBirthCertPreview(null);
+      return;
+    }
+
+    let alive = true;
+    let objectUrl: string | null = null;
+
+    (async () => {
+      try {
+        const res = await fetch(birthDoc.url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+
+        if (alive) setExistingBirthCertPreview(objectUrl);
+      } catch {
+        // ignore
+      }
+    })();
+
+    return () => {
+      alive = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [token, documents]);
 
   // File preview effect
   useEffect(() => {
@@ -81,9 +127,15 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
 
     if (submitStudentDetails.fulfilled.match(result)) {
       toast.success("Student details saved successfully!");
+      // ✅ refresh application so documents update
+      await dispatch(fetchMyApplication());
       nextStep();
     } else {
-      toast.error("Failed to save student details. Please try again.");
+      const msg =
+        typeof result.payload === "string"
+          ? result.payload
+          : result.error?.message || "Failed to save student details.";
+      toast.error(msg);
     }
   };
 
@@ -181,6 +233,20 @@ export default function StepThreeSecondary({ nextStep, prevStep }: Props) {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Birth Certificate
             </label>
+
+            {!watchedFile?.length && existingBirthCertPreview && (
+              <p className="mb-3 text-sm text-green-700">
+                Birth certificate already uploaded —{" "}
+                <a
+                  href={existingBirthCertPreview}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  View current file
+                </a>
+              </p>
+            )}
 
             <label className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition relative">
               {!watchedFile?.length ? (

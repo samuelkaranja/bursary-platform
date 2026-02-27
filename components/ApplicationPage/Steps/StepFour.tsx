@@ -25,13 +25,17 @@ interface FormValues {
 
 export default function StepFour({ nextStep, prevStep }: Props) {
   const dispatch = useDispatch<AppDispatch>();
+
+  const token = useSelector((state: RootState) => state.auth.accessToken);
+
   const {
     loading,
     parentName,
     parentId,
     parentPhone,
     relationship,
-    guardianPhoto: reduxGuardianPhoto,
+    guardianYearOfBirth,
+    documents,
   } = useSelector((state: RootState) => state.application);
 
   const {
@@ -58,42 +62,118 @@ export default function StepFour({ nextStep, prevStep }: Props) {
   const idBackFiles = watch("idBack");
   const guardianPhotoFiles = watch("guardianPhoto");
 
+  // New file previews (selected in this session)
   const [frontPreview, setFrontPreview] = useState<string | null>(null);
   const [backPreview, setBackPreview] = useState<string | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(
-    reduxGuardianPhoto || null,
-  );
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
 
-  // Hydrate form from Redux when going back
+  // Existing file previews (fetched from protected URLs)
+  const [existingFrontPreview, setExistingFrontPreview] = useState<
+    string | null
+  >(null);
+  const [existingBackPreview, setExistingBackPreview] = useState<string | null>(
+    null,
+  );
+  const [existingGuardianPhotoPreview, setExistingGuardianPhotoPreview] =
+    useState<string | null>(null);
+
+  // Hydrate form fields from Redux
   useEffect(() => {
     setValue("parentName", parentName || "");
     setValue("parentId", parentId || "");
     setValue("parentPhone", parentPhone || "");
     setValue("relationship", relationship || "");
-    if (reduxGuardianPhoto) setPhotoPreview(reduxGuardianPhoto);
+    setValue(
+      "yearOfBirth",
+      guardianYearOfBirth ? String(guardianYearOfBirth) : "",
+    );
   }, [
     parentName,
     parentId,
     parentPhone,
     relationship,
-    reduxGuardianPhoto,
+    guardianYearOfBirth,
     setValue,
   ]);
 
-  // Generate previews when files change
+  // Fetch existing docs as blob URLs (since doc URLs are protected and need Bearer token)
   useEffect(() => {
-    if (idFrontFiles?.[0])
-      setFrontPreview(URL.createObjectURL(idFrontFiles[0]));
-    if (idBackFiles?.[0]) setBackPreview(URL.createObjectURL(idBackFiles[0]));
+    if (!token) return;
+
+    const getDocUrl = (docType: string) =>
+      (documents ?? []).find((d) => d.doc_type === docType)?.url || null;
+
+    const photoUrl = getDocUrl("guardian_photo");
+    const frontUrl = getDocUrl("guardian_id_front");
+    const backUrl = getDocUrl("guardian_id_back");
+
+    let alive = true;
+    const created: string[] = [];
+
+    const fetchBlobUrl = async (
+      url: string | null,
+      setFn: (v: string | null) => void,
+    ) => {
+      if (!url) {
+        setFn(null);
+        return;
+      }
+      try {
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return;
+
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        created.push(objectUrl);
+
+        if (alive) setFn(objectUrl);
+      } catch {
+        // ignore preview errors
+      }
+    };
+
+    fetchBlobUrl(photoUrl, setExistingGuardianPhotoPreview);
+    fetchBlobUrl(frontUrl, setExistingFrontPreview);
+    fetchBlobUrl(backUrl, setExistingBackPreview);
+
+    return () => {
+      alive = false;
+      created.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, [token, documents]);
+
+  // Create previews when user selects new files (revoke properly to avoid leaks)
+  useEffect(() => {
+    const toRevoke: string[] = [];
+
+    if (idFrontFiles?.[0]) {
+      const u = URL.createObjectURL(idFrontFiles[0]);
+      setFrontPreview(u);
+      toRevoke.push(u);
+    } else {
+      setFrontPreview(null);
+    }
+
+    if (idBackFiles?.[0]) {
+      const u = URL.createObjectURL(idBackFiles[0]);
+      setBackPreview(u);
+      toRevoke.push(u);
+    } else {
+      setBackPreview(null);
+    }
+
     if (guardianPhotoFiles?.[0]) {
-      photoPreview && URL.revokeObjectURL(photoPreview);
-      setPhotoPreview(URL.createObjectURL(guardianPhotoFiles[0]));
+      const u = URL.createObjectURL(guardianPhotoFiles[0]);
+      setPhotoPreview(u);
+      toRevoke.push(u);
+    } else {
+      setPhotoPreview(null);
     }
 
     return () => {
-      idFrontFiles?.[0] && URL.revokeObjectURL(frontPreview || "");
-      idBackFiles?.[0] && URL.revokeObjectURL(backPreview || "");
-      guardianPhotoFiles?.[0] && URL.revokeObjectURL(photoPreview || "");
+      toRevoke.forEach((u) => URL.revokeObjectURL(u));
     };
   }, [idFrontFiles, idBackFiles, guardianPhotoFiles]);
 
@@ -104,6 +184,8 @@ export default function StepFour({ nextStep, prevStep }: Props) {
     formData.append("guardian_phone", data.parentPhone);
     formData.append("guardian_year_of_birth", data.yearOfBirth);
     formData.append("guardian_relationship", data.relationship);
+
+    // Only append files if user selected new ones (this enables "replace" behavior)
     if (data.idFront?.[0])
       formData.append("guardian_id_front", data.idFront[0]);
     if (data.idBack?.[0]) formData.append("guardian_id_back", data.idBack[0]);
@@ -114,11 +196,13 @@ export default function StepFour({ nextStep, prevStep }: Props) {
 
     if (submitGuardianDetails.fulfilled.match(result)) {
       toast.success("Guardian details saved successfully!");
-      const uploadedPhotoUrl = result.payload.guardian_photo;
-      if (uploadedPhotoUrl) setPhotoPreview(uploadedPhotoUrl);
       nextStep();
     } else {
-      toast.error("Failed to save guardian details. Please try again.");
+      const msg =
+        typeof result.payload === "string"
+          ? result.payload
+          : result.error?.message || "Failed to save guardian details.";
+      toast.error(msg);
     }
   };
 
@@ -130,6 +214,10 @@ export default function StepFour({ nextStep, prevStep }: Props) {
         Click to upload or drag and drop <br /> PDF, JPG, PNG (Max 5MB)
       </span>
     );
+
+  const displayPhoto =
+    photoPreview ||
+    (!guardianPhotoFiles?.length ? existingGuardianPhotoPreview : null);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
@@ -146,10 +234,23 @@ export default function StepFour({ nextStep, prevStep }: Props) {
           <label className="block text-sm font-medium text-gray-700 mb-3">
             Parent/Guardian Photo
           </label>
+
+          {!guardianPhotoFiles?.length && existingGuardianPhotoPreview ? (
+            <p className="mb-3 text-sm text-green-700">
+              Photo already uploaded — select a new one to replace.
+            </p>
+          ) : null}
+
           <Controller
             name="guardianPhoto"
             control={control}
-            rules={{ required: "Guardian photo is required" }}
+            rules={{
+              validate: (files) => {
+                const hasNew = !!files?.[0];
+                const hasExisting = !!existingGuardianPhotoPreview;
+                return hasNew || hasExisting || "Guardian photo is required";
+              },
+            }}
             render={({ field }) => (
               <div
                 className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition"
@@ -161,24 +262,25 @@ export default function StepFour({ nextStep, prevStep }: Props) {
               </div>
             )}
           />
+
           <input
             type="file"
             id="guardianPhotoInput"
             className="hidden"
-            {...register("guardianPhoto", {
-              required: "Guardian photo is required",
-            })}
+            {...register("guardianPhoto")}
             accept=".jpg,.jpeg,.png"
           />
+
           {errors.guardianPhoto && (
             <p className="text-red-500 text-sm mt-1">
               {errors.guardianPhoto.message}
             </p>
           )}
-          {photoPreview && (
+
+          {displayPhoto && (
             <div className="mt-3">
               <img
-                src={photoPreview}
+                src={displayPhoto}
                 alt="Guardian Preview"
                 className="w-32 h-32 object-cover rounded-full border"
               />
@@ -292,35 +394,66 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               ID Front
             </label>
+
+            {!idFrontFiles?.length && existingFrontPreview ? (
+              <p className="mb-2 text-sm text-green-700">
+                Front ID already uploaded — select a new one to replace.
+              </p>
+            ) : null}
+
             <input
               type="file"
               id="idFrontInput"
               className="hidden"
-              {...register("idFront", { required: "Front ID is required" })}
+              {...register("idFront", {
+                validate: (files) => {
+                  const hasNew = !!files?.[0];
+                  const hasExisting = !!existingFrontPreview;
+                  return hasNew || hasExisting || "Front ID is required";
+                },
+              })}
               accept=".pdf,.jpg,.jpeg,.png"
             />
+
             <div
               className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition"
               onClick={() => document.getElementById("idFrontInput")?.click()}
             >
               {renderFileLabel(idFrontFiles)}
             </div>
+
             {errors.idFront && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.idFront.message}
               </p>
             )}
-            {frontPreview && (
+
+            {/* Existing link */}
+            {!idFrontFiles?.length && existingFrontPreview ? (
+              <p className="mt-2 text-green-700 text-sm">
+                <a
+                  href={existingFrontPreview}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  View current Front ID
+                </a>
+              </p>
+            ) : null}
+
+            {/* New selection link */}
+            {frontPreview && idFrontFiles?.length ? (
               <p className="mt-2 text-blue-700 text-sm underline">
                 <a
                   href={frontPreview}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  View Front ID
+                  View selected Front ID
                 </a>
               </p>
-            )}
+            ) : null}
           </div>
 
           {/* Back ID */}
@@ -328,31 +461,62 @@ export default function StepFour({ nextStep, prevStep }: Props) {
             <label className="block text-sm font-medium text-gray-700 mb-3">
               ID Back
             </label>
+
+            {!idBackFiles?.length && existingBackPreview ? (
+              <p className="mb-2 text-sm text-green-700">
+                Back ID already uploaded — select a new one to replace.
+              </p>
+            ) : null}
+
             <input
               type="file"
               id="idBackInput"
               className="hidden"
-              {...register("idBack", { required: "Back ID is required" })}
+              {...register("idBack", {
+                validate: (files) => {
+                  const hasNew = !!files?.[0];
+                  const hasExisting = !!existingBackPreview;
+                  return hasNew || hasExisting || "Back ID is required";
+                },
+              })}
               accept=".pdf,.jpg,.jpeg,.png"
             />
+
             <div
               className="flex flex-col items-center justify-center w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 p-8 cursor-pointer hover:border-blue-900 transition"
               onClick={() => document.getElementById("idBackInput")?.click()}
             >
               {renderFileLabel(idBackFiles)}
             </div>
+
             {errors.idBack && (
               <p className="text-red-500 text-sm mt-1">
                 {errors.idBack.message}
               </p>
             )}
-            {backPreview && (
-              <p className="mt-2 text-blue-700 text-sm underline">
-                <a href={backPreview} target="_blank" rel="noopener noreferrer">
-                  View Back ID
+
+            {/* Existing link */}
+            {!idBackFiles?.length && existingBackPreview ? (
+              <p className="mt-2 text-green-700 text-sm">
+                <a
+                  href={existingBackPreview}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  View current Back ID
                 </a>
               </p>
-            )}
+            ) : null}
+
+            {/* New selection link */}
+            {backPreview && idBackFiles?.length ? (
+              <p className="mt-2 text-blue-700 text-sm underline">
+                <a href={backPreview} target="_blank" rel="noopener noreferrer">
+                  View selected Back ID
+                </a>
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -366,6 +530,7 @@ export default function StepFour({ nextStep, prevStep }: Props) {
         >
           ← Previous
         </button>
+
         <button
           type="submit"
           disabled={loading}
