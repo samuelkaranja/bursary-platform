@@ -1,15 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Stepper from "@/components/ApplicationPage/Stepper";
 import StepOne from "@/components/ApplicationPage/Steps/StepOne";
 import StepTwo from "@/components/ApplicationPage/Steps/StepTwo";
 import StepThree from "@/components/ApplicationPage/Steps/StepThree";
 import StepFour from "@/components/ApplicationPage/Steps/StepFour";
 import StepFive from "@/components/ApplicationPage/Steps/StepFive";
+import { APPLICATIONS_OPEN } from "@/config/application";
 
 export default function ApplicationPage() {
   const [step, setStep] = useState(1);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!APPLICATIONS_OPEN) {
+      router.replace("/");
+    }
+  }, [router]);
+
+  if (!APPLICATIONS_OPEN) {
+    return null;
+  }
 
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);

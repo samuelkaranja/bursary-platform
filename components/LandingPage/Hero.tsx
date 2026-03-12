@@ -1,7 +1,23 @@
+"use client";
+
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import toast from "react-hot-toast";
+import { APPLICATIONS_OPEN } from "@/config/application";
 
 export default function Hero() {
+  const router = useRouter();
+
+  const handleApplyClick = () => {
+    if (!APPLICATIONS_OPEN) {
+      toast.error("The application process has been closed");
+      return;
+    }
+
+    router.push("/application");
+  };
+
   return (
     <section className="relative overflow-hidden bg-linear-to-br from-blue-950 via-blue-900 to-blue-800 text-white">
       <div className="max-w-7xl mx-auto px-6 py-24 grid lg:grid-cols-2 gap-12 items-center">
@@ -22,12 +38,12 @@ export default function Hero() {
           </p>
 
           <div className="flex flex-wrap gap-4 mt-8">
-            <Link
-              href="/application"
+            <button
+              onClick={handleApplyClick}
               className="bg-orange-500 hover:bg-orange-600 px-6 py-3 rounded-md font-medium transition"
             >
               Apply Now
-            </Link>
+            </button>
 
             <Link
               href="/login"
