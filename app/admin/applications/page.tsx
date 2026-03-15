@@ -16,7 +16,7 @@ import { AppDispatch, RootState } from "@/redux/store";
 import {
   fetchAdminApplications,
   setQuery,
-  exportApprovedCsv,
+  exportApplicationsCsv,
 } from "@/redux/features/adminApplicationsSlice";
 
 function formatDate(iso: string) {
@@ -26,10 +26,6 @@ function formatDate(iso: string) {
 }
 
 export default function ApplicationsPage() {
-  useEffect(() => {
-    console.log("✅ ApplicationsPage mounted");
-    return () => console.log("🧹 ApplicationsPage unmounted");
-  }, []);
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
 
@@ -132,9 +128,20 @@ export default function ApplicationsPage() {
     dispatch(fetchAdminApplications());
   };
 
+  const onExportSubmitted = async () => {
+    const dataUrl = await dispatch(exportApplicationsCsv("submitted")).unwrap();
+
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = "submitted-applications.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   const onExportApproved = async () => {
-    // thunk now returns a serializable data URL string (e.g. "data:text/csv;base64,...")
-    const dataUrl = await dispatch(exportApprovedCsv()).unwrap();
+    const dataUrl = await dispatch(exportApplicationsCsv("approved")).unwrap();
+
     const a = document.createElement("a");
     a.href = dataUrl;
     a.download = "approved-applications.csv";
@@ -149,7 +156,12 @@ export default function ApplicationsPage() {
       subtitle="Review and manage all bursary applications"
     >
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <ApplicationsHeader total={total} onExportApproved={onExportApproved} />
+        <ApplicationsHeader
+          total={total}
+          exporting={exporting}
+          onExportSubmitted={onExportSubmitted}
+          onExportApproved={onExportApproved}
+        />
 
         <ApplicationsToolbar
           search={search}

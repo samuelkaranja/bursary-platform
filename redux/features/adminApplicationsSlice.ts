@@ -44,7 +44,7 @@ type State = {
   query: AdminApplicationsQuery;
   loading: boolean;
   error: string | null;
-  exporting: boolean;
+  exporting: "submitted" | "approved" | null;
   deleting: boolean;
 };
 
@@ -58,7 +58,7 @@ const initialState: State = {
   },
   loading: false,
   error: null,
-  exporting: false,
+  exporting: null,
   deleting: false,
 };
 
@@ -123,9 +123,9 @@ export const deleteAdminApplication = createAsyncThunk(
 /* =========================
    EXPORT CSV
 ========================= */
-export const exportApprovedCsv = createAsyncThunk(
-  "adminApplications/exportApprovedCsv",
-  async (_, { getState, rejectWithValue }) => {
+export const exportApplicationsCsv = createAsyncThunk(
+  "adminApplications/exportCsv",
+  async (type: "submitted" | "approved", { getState, rejectWithValue }) => {
     const state = getState() as RootState;
     const token = state.auth.accessToken;
     const role = String(state.auth.role ?? "")
@@ -135,22 +135,22 @@ export const exportApprovedCsv = createAsyncThunk(
     if (role !== "admin") return rejectWithValue("Forbidden: admin only");
     if (!token) return rejectWithValue("Missing token");
 
-    const { q, level, school, date_from, date_to, sort_dir } =
+    const { q, level, school, date_from, date_to } =
       state.adminApplications.query;
 
     const params = new URLSearchParams();
+
     if (q) params.set("q", q);
     if (level) params.set("level", level);
     if (school) params.set("school", school);
     if (date_from) params.set("date_from", date_from);
     if (date_to) params.set("date_to", date_to);
-    if (sort_dir) params.set("sort_dir", sort_dir);
 
-    const url = `/admin/applications/export-approved.csv?${params.toString()}`;
+    const url = `/admin/applications/export-${type}.csv?${params.toString()}`;
 
     try {
-      const blob = await apiFetch(url, { method: "GET" }, token);
-      return blob;
+      const dataUrl = await apiFetch(url, { method: "GET" }, token);
+      return dataUrl;
     } catch (err: any) {
       return rejectWithValue(err.message);
     }
@@ -174,7 +174,7 @@ const slice = createSlice({
       state.data = null;
       state.loading = false;
       state.error = null;
-      state.exporting = false;
+      state.exporting = null;
       state.deleting = false;
     },
   },
@@ -213,16 +213,18 @@ const slice = createSlice({
       s.error = a.payload ?? "Failed to delete application";
     });
 
-    /* EXPORT */
-    b.addCase(exportApprovedCsv.pending, (s) => {
-      s.exporting = true;
+    /* EXPORT CSV */
+    b.addCase(exportApplicationsCsv.pending, (s, a) => {
+      s.exporting = a.meta.arg; // "submitted" | "approved"
       s.error = null;
     });
-    b.addCase(exportApprovedCsv.fulfilled, (s) => {
-      s.exporting = false;
+
+    b.addCase(exportApplicationsCsv.fulfilled, (s) => {
+      s.exporting = null;
     });
-    b.addCase(exportApprovedCsv.rejected, (s, a: any) => {
-      s.exporting = false;
+
+    b.addCase(exportApplicationsCsv.rejected, (s, a: any) => {
+      s.exporting = null;
       s.error = a.payload ?? "Failed to export CSV";
     });
   },
