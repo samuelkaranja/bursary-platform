@@ -143,9 +143,13 @@ export default function StepFive({ prevStep }: Props) {
             </span>{" "}
             {applicationState.institution || "-"}
           </p>
-          <p className="text-[14px] text-black pb-1">
+          {/* <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">Grade:</span>{" "}
             {applicationState.studentClassForm || "-"}
+          </p> */}
+          <p className="text-[14px] text-black pb-1">
+            <span className="text-black text-[15px] font-semibold">National ID:</span>{" "}
+            {applicationState.nationalId || "-"}
           </p>
           <p className="text-[14px] text-black pb-1">
             <span className="text-black text-[15px] font-semibold">

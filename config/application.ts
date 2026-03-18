@@ -1,1 +1,1 @@
-export const APPLICATIONS_OPEN = false;
+export const APPLICATIONS_OPEN = true;
