@@ -211,7 +211,7 @@ export default function StepFour({ nextStep, prevStep }: Props) {
       <span className="text-gray-900 text-sm">{fileList[0].name}</span>
     ) : (
       <span className="text-gray-500 text-sm text-center">
-        Click to upload or drag and drop <br /> PDF, JPG, PNG (Max 5MB)
+        Click to upload or drag and drop <br /> PDF, JPG, PNG
       </span>
     );
 

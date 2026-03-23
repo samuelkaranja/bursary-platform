@@ -42,10 +42,8 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
 
   const [previewURL, setPreviewURL] = useState<string | null>(null);
 
-  // Watch file input
   const admissionLetter = watch("admissionLetter");
 
-  // Prefill from Redux (Cleaner with reset)
   useEffect(() => {
     reset({
       fullName: fullName || "",
@@ -55,7 +53,6 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
     });
   }, [fullName, institution, nationalId, registrationNumber, reset]);
 
-  // File preview handling
   useEffect(() => {
     if (admissionLetter && admissionLetter.length > 0) {
       const file = admissionLetter[0];
@@ -78,9 +75,8 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
     formData.append("student_registration_number", data.registrationNumber);
     formData.append("student_id_number", data.nationalId);
 
-    if (data.admissionLetter?.[0]) {
-      formData.append("admission_letter", data.admissionLetter[0]);
-    }
+    // Now guaranteed to exist
+    formData.append("admission_letter", data.admissionLetter[0]);
 
     const result = await dispatch(submitStudentDetails(formData));
 
@@ -195,7 +191,7 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
               <span className="text-gray-500 text-sm text-center">
                 Click to upload or drag and drop
                 <br />
-                PDF, JPG, PNG (Max 5MB)
+                PDF, JPG, PNG
               </span>
             ) : (
               <span className="text-gray-900 text-sm text-center">
@@ -207,12 +203,15 @@ export default function StepThreeUniversity({ nextStep, prevStep }: Props) {
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
               {...register("admissionLetter", {
+                required: "Admission letter is required",
                 validate: (files) => {
-                  if (!files || files.length === 0) return true;
-                  const file = files[0];
-                  if (file.size > 5 * 1024 * 1024) {
-                    return "File size must be less than 5MB";
+                  const file = files?.[0];
+                  if (!file) return "Admission letter is required";
+
+                  if (file.size > 20 * 1024 * 1024) {
+                    return "File size must be less than 20MB";
                   }
+
                   return true;
                 },
               })}
